@@ -1,31 +1,34 @@
 ## This module cleans and tidies the data. 
 
 ## Load packages and data set. 
-library(tidyr)
-library(dplyr)
+## run install.packages("pacman") if you do not have this package. 
+library(pacman)
+pacman::p_load(dplyr)
 td = tempdir()
 temp = tempfile(tmpdir=td, fileext=".zip")
 download.file("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2019/Septiembre/BDD_DATOS_ABIERTOS_ENEMDU_%202019_09_CSV.zip",temp)
 unzip(temp, exdir=td, overwrite=TRUE)
 dat0 <- read.csv(file.path(td, "BDD_DATOS_ABIERTOS_ENEMDU_ 2019_09_CSV/enemdu_personas_2019_09.csv"), sep =';')
+unlink(temp)
 
 
 ## Select columns of interest (location of origin, migration, higher education 
 ## level and age).Select rows of interest(age from 20 to 25)
 
 dat1 <- dat0 %>%
-        select(ciudad, p03, p15aa, p15ab, p16a, p16b, p17a, p17b, p10a, p10b, 
-               p12a, p12b) %>%
-        filter(p03 > 20 & p03 < 25) 
+        select(ciudad, p03, p15, p15aa, p15ab, p16a, p16b, p17a, p17b, p10a, 
+               p10b, p07, p12a, p12b) %>%
+        filter(p03 > 17 & p03 < 25) 
 
 
 ## Tidy columnnames. Create factor variables in line with codebook. 
 
-names(dat1) <- c("survey.location", "age", "born.in.survey.location", 
-                 "place.of.birth", "ever.moved", 
+names(dat1) <- c("survey.location", "age", "ethnicity", 
+                 "born.in.survey.location", "place.of.birth", "ever.moved", 
                  "time.in.current.home", "prior.home.abroad", 
                  "location.prior.home", "higher.education.level", 
-                 "no.years.completed", "obtained.degree", "field.of.degree")
+                 "no.years.completed", "currently.matriculated",
+                 "obtained.degree", "field.of.degree")
 
 dat1$higher.education.level <- factor(dat1$higher.education.level, 
                                       levels = 1:10, labels = 
@@ -41,6 +44,11 @@ dat1$ever.moved <- factor(dat1$ever.moved, levels = c(1,2),
                                     labels = c("no", "yes"))
 dat1$prior.home.abroad <- factor(dat1$prior.home.abroad, levels = 
                                          c(1,2), labels = c("no","yes"))
+dat1$ethnicity <- factor(dat1$ethnicity, levels = 1:8, labels = c("indigenous",
+                                "afroecuadorian", "black", "mulatto",
+                                "montubio", "mestizo", "white", "other"))
+dat1$currently.matriculated <- factor(dat1$currently.matriculated, levels =
+                                              c(1,2), labels = c("yes", "no"))
 
 
 ## Select rows where place.of.birth with survey.location is the same as 
