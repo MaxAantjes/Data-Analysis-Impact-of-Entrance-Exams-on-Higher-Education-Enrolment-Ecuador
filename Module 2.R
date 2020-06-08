@@ -1,12 +1,13 @@
-## This module manipulates the data to distinguish between rural and urban migration and origin. 
+## This module manipulates the data to distinguish between rural 
+## and urban migration and origin. 
 
 
 ## Load packages and data.Download list of postal codes and
 ## ural/ urban divide in Ecuador. 
 
+library(pacman)
 pacman::p_load(pdftools)
 pacman::p_load(stringr)
-pacman::p_load(dplyr)
 
 dat0 <- readRDS("clean_data")
 td = tempdir()
@@ -18,9 +19,13 @@ unlink(temp)
 ## Load useful function. 
 
 change_name <- function(x, original, new) {
+        
         for(i in 1:length(original)) {
+                
                 x <- gsub(original[i], new[i], x)
+                
         }
+        
         return(x)
 }
 
@@ -28,13 +33,16 @@ change_name <- function(x, original, new) {
 ## Create a list containing rural postal codes.
 
 pdf1 <- tolower(paste(pdf0, collapse =""))
+
 original <- c(" ", "rural", "cantón", "zonasenestudio", "zonam")
 new <- c("", "splitsplitstartrural", "endruralsplitsplit",
          "endruralsplitsplit", "endruralsplitsplit")
 pdf1 <- change_name(pdf1, original,new)
+
 pdf1 <- str_split(pdf1, "splitsplit")
 rural.list <- unlist(lapply(pdf1, grep, pattern = 
                               "startrural(.*)endrural"))
+
 rural.text <- pdf1[[1]][rural.list]
 
 
@@ -86,9 +94,14 @@ rurORurb <- function(code, v1 = rural.codes, v2 = urban.codes) {
 ## (urban and rural). 
 
 dat1 <- dat0
+
 dat1$place.of.birth <- sapply(dat0$place.of.birth, rurORurb)
-dat1$location.prior.home <- sapply(dat1$location.prior.home, 
+
+dat1$location.prior.address <- sapply(dat1$location.prior.address, 
                                    rurORurb)
+
+dat1$current.address <- sapply(dat1$current.address, 
+                                      rurORurb)
 
 ## Save data
 saveRDS(dat1, "clean_data_urban_rural")
