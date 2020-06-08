@@ -1,7 +1,8 @@
 ## This module cleans and tidies the data. 
 
 ## Load packages and data set. 
-## run install.packages("pacman") if you do not have this package. 
+## run install.packages("pacman") if you do not have this package.
+
 library(pacman)
 pacman::p_load(dplyr)
 td = tempdir()
@@ -23,10 +24,10 @@ dat1 <- dat0 %>%
 
 ## Tidy columnnames. Create factor variables in line with codebook. 
 
-names(dat1) <- c("survey.location", "age", "ethnicity", 
-                 "born.in.survey.location", "place.of.birth", "ever.moved", 
-                 "time.in.current.home", "prior.home.abroad", 
-                 "location.prior.home", "higher.education.level", 
+names(dat1) <- c("current.address", "age", "ethnicity", 
+                 "born.at.current.address", "place.of.birth", "ever.moved", 
+                 "time.at.current.address", "prior.address.abroad", 
+                 "location.prior.address", "higher.education.level", 
                  "no.years.completed", "currently.matriculated",
                  "obtained.degree", "field.of.degree")
 
@@ -36,13 +37,13 @@ dat1$higher.education.level <- factor(dat1$higher.education.level,
                                            "none", "none", "none", 
                                            "technical.school",
                                            "undergraduate", "postgraduate"))
-dat1$born.in.survey.location <- factor(dat1$born.in.survey.location, labels =
+dat1$born.at.current.address <- factor(dat1$born.at.current.address, labels =
                        c("yes", "no.as.national", "no.as.international"))
 dat1$obtained.degree <- factor(dat1$obtained.degree, levels = c(1,2), labels =
                                        c("yes", "no"))
 dat1$ever.moved <- factor(dat1$ever.moved, levels = c(1,2),
                                     labels = c("no", "yes"))
-dat1$prior.home.abroad <- factor(dat1$prior.home.abroad, levels = 
+dat1$prior.address.abroad <- factor(dat1$prior.address.abroad, levels = 
                                          c(1,2), labels = c("no","yes"))
 dat1$ethnicity <- factor(dat1$ethnicity, levels = 1:8, labels = c("indigenous",
                                 "afroecuadorian", "black", "mulatto",
@@ -55,18 +56,21 @@ dat1$currently.matriculated <- factor(dat1$currently.matriculated, levels =
 ## place.of.birth. Replace place.of.birth with survey.location. 
 
 dat2 <- dat1 %>%
-        filter(born.in.survey.location == "yes") %>%
-        mutate(place.of.birth = survey.location) %>%
-        select(-c(born.in.survey.location, survey.location))
+        filter(born.at.current.address == "yes") %>%
+        mutate(place.of.birth = current.address) %>%
+        select(-born.at.current.address)
 
 
-## Now we merge the data sets again and exclude foreign born Ecuadorians.
+## Now we merge the data sets again and exclude foreign born 
+## Ecuadorians.
+
 dat3 <- dat1 %>%
-        filter(born.in.survey.location == "no.as.national") %>%
-        select(-c(born.in.survey.location, survey.location)) %>%
+        filter(born.at.current.address == "no.as.national") %>%
+        select(-born.at.current.address) %>%
         rbind(dat2)
 
+
 ## Save data
-saveRDS(dat3, "clean.data")
+saveRDS(dat3, "clean_data")
         
 
