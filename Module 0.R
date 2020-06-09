@@ -3,7 +3,7 @@
 
 ## Unfortunately, there is NO consistency in the data folders provided 
 ## by the Ecuadorian government. As such, filepaths for every individual
-## download needs to be specified. 
+## download need to be specified. 
 
 library(pacman)
 pacman::p_load(dplyr)
@@ -19,6 +19,7 @@ load.files <- function(x) {
                 
                 dat <- read.csv(file.path(td, x[2]), sep =';')
                 dat <- mutate(dat, date = x[3])
+                names(dat)[[1]] <- "survey.location"
                 
                 unlink(temp)
                 
@@ -53,6 +54,9 @@ y2018mar <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/201
 
 links <- list(y2019sep, y2019jun, y2019mar, y2018dec, y2018sep,
               y2018jun, y2018mar)
+
+
+## Create a list of dataframes. 
 
 all.data <- lapply(links, load.files)
 
