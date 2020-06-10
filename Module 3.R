@@ -5,111 +5,144 @@
 
 library(pacman)
 pacman::p_load(dplyr)
+pacman::p_load(stringr)
 
 dat0 <- readRDS("modified_data_1.csv")
-rural.codes <- as.vector(readRDS("rural_codes.csv"))
-urban.codes <- as.vector(readRDS("urban_codes.csv"))
+list0 <- readRDS("codes.csv")
+list0$codes <- as.integer(list0$codes)
 
 
-## Whether codes are rural or urban can be checked with the 
-## following function. This can be (and has been) used to test 
-## the validity of the above method. 
+## GOAL: know whether the individuals who were born at the survey
+## location were born in rural or urban areas. 
 
-rurORurb <- function(code, v1 = rural.codes, v2 = urban.codes) {
+## METHOD: Select rows where born.at.current.address equals
+## yes. Replace place.of.birth with survey.location (which is 
+## already a factor variable with levels "urban" and "rural"). 
+
+bsl <- dat0 %>%
+        filter(born.at.current.address == "yes") %>%
+        mutate(place.of.birth = current.address) %>%
+        select(-born.at.current.address)
+
+
+## GOAL: know whether the individuals who were not born at the
+## survey location were born abroad. .
+
+## METHOD: select rows where born.at.current.address equals
+## no.as.international. Replace place.of.birth with "abroad". 
+
+ba <- dat0 %>%
+        filter(born.at.current.address == "no.as.international") %>%
+        mutate(place.of.birth = "abroad") %>%
+        select(-born.at.current.address)
+
+
+## GOAL: know whether the individuals who were not born at the
+## survey location were born in rural or urban areas. 
+
+## METHOD: select rows where born.at.current.address equals
+## no.as.national. The data takes the form of integer postcode 
+## values. Match rural codes with "rural" and urban codes with 
+## "urban" through function. 
+
+be <- dat0 %>%
+        filter(born.at.current.address == "no.as.national") %>%
+        select(-born.at.current.address)
+
+
+rurORurb <- function(x, y = list0) {
         
-        if (is.na(code) == TRUE) {
+        if (is.na(x) == TRUE) {
                 
-                c <- code
+                c <- NA
                 
         } else {
                 
-                a <- sum(grepl(code, v1))
-                b <- sum(grepl(code, v2))
-                
-                if(a>0) {
+               c <-  y$area[y$codes == x]
+               
+               if(identical(c, character(0))) {
+                       
+                       c <- "code not found"
+               }
                         
-                        c <- "rural"}
-                
-                if(b>0) {
-                        
-                        c <- "urban"} 
-                
-                if(b==0 & a ==0) {
-                        
-                        c <- "code not found"
-                }
-                
         }
         
         return(c)
 }
 
 
-## Select rows where place.of.birth with survey.location is the 
-## same as place.of.birth. Replace place.of.birth with 
-## survey.location. 
-
-born.surv.loc <- dat0 %>%
-        filter(born.at.current.address == "yes") %>%
-        mutate(place.of.birth = current.address) %>%
-        select(-born.at.current.address)
+be$place.of.birth <- sapply(be$place.of.birth, rurORurb)
 
 
-## Now we merge the data sets again and exclude foreign born 
-## Ecuadorians.
-
-born.elsewhere <- dat0 %>%
-        filter(born.at.current.address == "no.as.national") %>%
-        select(-born.at.current.address)
-
-born.elsewhere$place.of.birth <- sapply(
-        born.elsewhere$place.of.birth, rurORurb)
+## GOAL: Merge the three subsets back into a single data.frame.  
         
-dat1 <- rbind(born.elsewhere, born.surv.loc)
+dat1 <- rbind(be, ba, bsl)
+dat1$place.of.birth <- factor(dat1$place.of.birth)
 
 
-## Replace codes in original data set with factor variable
-## (urban and rural). 
+## GOAL: Replace codes in location.prior.address with factor
+## level "abroad". 
 
-dat1$location.prior.address <- sapply(dat1$location.prior.address, 
+## METHOD: select rows where prior.address.abroad equals "yes".
+## set location.prior.address to "abroad". 
+
+pab <- dat1 %>%
+        filter(prior.address.abroad == "yes") %>%
+        mutate(location.prior.address = "abroad") %>%
+        select(-prior.address.abroad)
+
+
+## GOAL: Replace codes in location.prior.address with factor
+## levels "urban" and "rural". 
+
+## METHOD: select rows where prior.address.abroad equals "no".
+## Apply rurORurb function on location.prior.address. .
+
+pal <- dat1 %>%
+        filter(prior.address.abroad == "no" |
+                       is.na(prior.address.abroad)) %>%
+        select(-prior.address.abroad)
+
+pal$location.prior.address <- sapply(pal$location.prior.address, 
                                       rurORurb)
 
-saveRDS(dat1, "temp")
+
+## GOAL: Merge the two subsets back into a single data.frame. 
+
+dat2 <- rbind(pab, pal)
+dat2$location.prior.address <- factor(dat2$location.prior.address)
 
 
-## Create last.migration variable. Note: rows with outside 
-## migration are lost. 
+## GOAL: Clean up unnecessary NA values in data set (where the
+## question was not asked as information was already given in
+## prior questions). This allows us to see whether NA values
+## are actually missing data. 
+
+## METHOD: set time.at.current.address to age if ever.moved
+## equals "no". Set prior address to "none". 
+
+nm <- dat2 %>%
+        filter(ever.moved == "no") %>%
+        mutate(time.at.current.address = age) %>%
+        mutate(location.prior.address = "none")
+
+ym <- dat2 %>%
+        filter(ever.moved == "yes" | is.na(ever.moved))
+        
+dat3 <- rbind(nm, ym)
 
 
-always.rural <- dat1 %>%
-        filter(place.of.birth == "rural" & ever.moved == "no") %>%
-        mutate(last.migration = "always.rural")
+## METHOD: set obtained.degree to "no" if higher.education.level
+## equals "none". Set field.of.degree to "none" if obtained.degree
+## equals "no". 
 
-always.urban <- dat1 %>%
-        filter(place.of.birth == "urban" & ever.moved == "no") %>%
-        mutate(last.migration = "always.urban")
-
-rural.rural <- dat1 %>%
-        filter(current.address == "rural" & location.prior.address == "rural" & ever.moved == "yes") %>%
-        mutate(last.migration = "rural.to.rural")
-
-urban.urban <- dat1 %>%
-        filter(current.address == "urban" & location.prior.address == "urban" & ever.moved == "yes") %>%
-        mutate(last.migration = "urban.to.urban")
-
-rural.urban <- dat1 %>%
-        filter(current.address == "urban" & location.prior.address == "rural" & ever.moved == "yes") %>%
-        mutate(last.migration = "rural.to.urban")
-
-urban.rural <- dat1 %>%
-        filter(current.address == "rural" & location.prior.address == "urban" & ever.moved == "yes") %>%
-        mutate(last.migration = "urban.to.rural")
-
-dat1 <- rbind(always.rural, always.urban, rural.rural, urban.urban, rural.urban, urban.rural) 
-dat1 <- select(dat1, -c(current.address, ever.moved, prior.address.abroad, location.prior.address))
-dat1$last.migration <- factor(dat1$last.migration)
+dat3$obtained.degree[dat3$higher.education.level == "none"] <- "no"
+dat3$field.of.degree[dat3$obtained.degree == "no"] <- "none"
+dat3$obtained.degree <- factor(dat3$obtained.degree)
 
 
-## Save file 
+## Order columns in intuitive way.
+dat3 <- dat3[, c(13, 2, 3, 5, 6, 1, 7, 4, 8, 9, 10, 11, 12)]
 
+## We now actually now whether NA values are missing. 
 saveRDS(dat1, file = "modified_data_1.csv")
