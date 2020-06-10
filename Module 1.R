@@ -32,7 +32,7 @@ names(dat2) <- c("current.address", "age", "ethnicity",
                  "time.at.current.address", "prior.address.abroad", 
                  "location.prior.address", "higher.education.level", 
                  "no.years.completed", "currently.matriculated",
-                 "obtained.degree", "field.of.degree", "date") #"current.address"
+                 "obtained.degree", "field.of.degree", "survey.date")
 
 dat2$current.address <- factor(dat2$current.address, level = c(1,2),
                                labels = c("urban", "rural"))
