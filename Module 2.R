@@ -49,14 +49,22 @@ urban.text <- pdf1[[1]][-rural.list]
 
 
 ## Extract rural and urban postal codes from list.
-rural.codes <- as.integer(unlist(str_extract_all(rural.text, 
+rural.codes <- data.frame(unlist(str_extract_all(rural.text, 
                                "[0-9][0-9][0-9][0-9][0-9][0-9]")))
-urban.codes <- as.integer(unlist(str_extract_all(urban.text, 
+urban.codes <- data.frame(unlist(str_extract_all(urban.text, 
                                 "[0-9][0-9][0-9][0-9][0-9][0-9]")))
 
-saveRDS(rural.codes, file = "rural_codes.csv")
-saveRDS(urban.codes, file = "urban_codes.csv")
-rm(list =ls())
+names(rural.codes) <- "codes"
+rural.codes <- mutate(rural.codes, area = "rural")
+names(urban.codes) <- "codes"
+urban.codes <- mutate(urban.codes, area = "urban")
+code.list <- rbind(rural.codes, urban.codes)
+
+
+## Create dataframe of codes 
+
+saveRDS(code.list, file = "codes.csv")
+
 
 
 
