@@ -32,28 +32,51 @@ load.files <- function(x) {
 
 y2019sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2019/Septiembre/BDD_DATOS_ABIERTOS_ENEMDU_%202019_09_CSV.zip",
               "BDD_DATOS_ABIERTOS_ENEMDU_ 2019_09_CSV/enemdu_personas_2019_09.csv",
-              "201909")
+              "2019-09")
 y2019jun <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2019/Junio/BDD_DATOS_ABIERTOS_ENEMDU_2019_06_CSV.zip",
               "BDD_DATOS_ABIERTOS_ENEMDU_ 2019_06_CSV/201906_EnemduBDD_15anios.csv",
-              "201906")
+              "2019-06")
 y2019mar <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2019/Marzo/BDD_DATOS_ABIERTOS_ENEMDU_%202019_03_CSV.zip", 
               "BDD_DATOS_ABIERTOS_ENEMDU_ 2019_03_CSV/201903_EnemduBDD_15anios.csv",
-              "201903")
+              "2019-03")
 y2018dec <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2018/Diciembre-2018/BDD_DATOS_ABIERTOS_ENEMDU_%202018_12_CSV.zip",
               "BDD_DATOS_ABIERTOS_ENEMDU_ 2018_12_CSV/201812_enemdubdd_15anios.csv",
-              "201812")
+              "2018-12")
 y2018sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2018/Septiembre-2018/BDD_DATOS_ABIERTOS_ENEMDU_2018_09_CSV.zip",
               "BDD_DATOS_ABIERTOS_ENEMDU_2018_09_CSV/201809_EnemduBDD_15anios.csv",
-              "201809")
+              "2018-09")
 y2018jun <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2018/Junio-2018/BDD_DATOS_ABIERTOS_ENEMDU_2018_06_CSV.zip",
               "201806_EnemduBDD_15anios.csv",
-              "201806")
+              "2018-06")
 y2018mar <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2018/Marzo-2018/BDD_DATOS_ABIERTOS_ENEMDU_2018_03_CSV.zip",
               "201803_EnemduBDD_15anios.csv",
-              "201803")
+              "2018-03")
+y2017dec <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2017/Diciembre/BASES-DATOS-ENENDU_CSV.zip",
+              "BASES_CSV/201712_EnemduBDD_15anios.csv",
+              "2017-12")
+#y2017sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2017/Septiembre/201709_EnemduBDD_CSV.zip",
+              #"201709_EnemduBDD_CSV/201709_EnemduBDD_15anios.csv",
+              #"201709")
+y2017jun <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2017/Junio/062017_bddEnemdu_CSV.zip",
+              "201706_EnemduBDD_CSV/201706_EnemduBDD_15anio.sav.csv",
+              "2017-06")
+y2017mar <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2017/Marzo/032017_bddEnemdu_CSV.zip",
+              "032017_bddEnemdu_CSV/201703_EnemduBDD_CSV/201703_EnemduBDD_15anios.csv",
+              "2017-03")
+y2016dec <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2016/Diciembre-2016/122016_EnemduBDD_CVS.zip",
+              "Bases CVS/122016_enemdubdd_completa.csv",
+              "2016-12")
+y2016sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2016/Septiembre-2016/BDD_ENEMDU_SEPTIEMBRE_2016_CSV.zip",
+              "201609_EnemduBDD_per.csv",
+              "2016-09")
+##y2016jun <- c("https://www.ecuadorencifras.gob.ec//documentos/web-inec/EMPLEO/2016/Junio-2016/BDD-ENEMDU-Junio2016.zip",
+              ##"Publicadas/201606_EnemduBDD.SAV",
+              ##"06-2016")
+
 
 links <- list(y2019sep, y2019jun, y2019mar, y2018dec, y2018sep,
-              y2018jun, y2018mar)
+              y2018jun, y2018mar, y2017dec, y2017jun, y2017mar,
+              y2016dec, y2016sep)
 
 
 ## Create a list of dataframes. 
