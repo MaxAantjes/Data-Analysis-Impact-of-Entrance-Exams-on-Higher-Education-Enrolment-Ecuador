@@ -2,37 +2,53 @@
 
 
 ## Load packages and data set. 
-## run install.packages("pacman") if you do not have this package.
 
 library(pacman)
-pacman::p_load(dplyr)
+pacman::p_load(dplyr, zoo)
 
 dat0 <- readRDS("raw_data")
 
 
-## running list() on dat0 reveals that the data sets have different variables.
-## For this reason we will reduce each data frame to a set of variables which are available
-## for each element data frame of the list and which are relevant for our analysis. 
-## We select the following columns of interest (related to location of origin, 
-## migration, higher education level and age).Select rows of interest(age from 20 to 25)
-## Whether these variables were available and similar for each year and period can be
-## verified by checking the used "formulario" in every respective raw data folder linked 
-## in the codebook. 
+## GOAL: create dataframe of multiple dataframes by selecting
+## the columns of interest they have in common.
+
+## METHOD: eradicate lower/uppercase differences between dataframes.
+## create and run function. 
+
+namestolower <- function(x) {
+        
+        names(x) <- tolower(names(x))
+        
+        return(x)
+                        
+}
+
+dat0 <- lapply(dat0, namestolower)
 
 
-dat1 <- lapply(dat0, select, survey.location, p03, p15, p15aa, p15ab, p16a, p16b, p17a, p17b, p10a, 
-       p10b, p07, p12a, p12b, date)
+## METHOD: Select columns of interest and bind datasets. 
+
+dat1 <- lapply(dat0, select, survey.location, p03, p15, p15aa, p15ab, 
+               p16a, p16b, p17a, p17b, p10a, p10b, p07, p12a, p12b, 
+               date, p09, p18)
+
 dat2 <- rbind(dat1[[1]], dat1[[2]], dat1[[3]], dat1[[4]], dat1[[5]],
-              dat1[[6]], dat1[[7]])
+              dat1[[6]], dat1[[7]], dat1[[8]], dat1[[9]], dat1[[10]],
+              dat1[[11]], dat1[[12]])
 
-## Tidy columnnames. Create factor variables in line with codebook. 
+
+## GOAL: Tidy columnnames. Create factor variables in line with codebook. 
 
 names(dat2) <- c("current.address", "age", "ethnicity", 
                  "born.at.current.address", "place.of.birth", "ever.moved", 
                  "time.at.current.address", "prior.address.abroad", 
                  "location.prior.address", "higher.education.level", 
                  "no.years.completed", "currently.matriculated",
-                 "obtained.degree", "field.of.degree", "survey.date")
+                 "obtained.degree", "field.of.degree", "survey.date",
+                 "reason.not.matriculated", "reason.for.migration")
+
+
+## GOAL: Transform character variables into factor variables where relevant. 
 
 dat2$current.address <- factor(dat2$current.address, level = c(1,2),
                                labels = c("urban", "rural"))
@@ -51,8 +67,8 @@ dat2$born.at.current.address <- factor(dat2$born.at.current.address, level =
 dat2$obtained.degree <- factor(dat2$obtained.degree, levels = c(1,2), labels =
                                        c("yes", "no"))
 
-dat2$ever.moved <- factor(dat2$ever.moved, levels = c(1,2),
-                                    labels = c("no", "yes"))
+dat2$ever.moved <- factor(dat2$ever.moved, levels = c(2,1),
+                                    labels = c("yes", "no"))
 
 dat2$prior.address.abroad <- factor(dat2$prior.address.abroad, levels = 
                                          c(1,2), labels = c("no","yes"))
@@ -63,8 +79,21 @@ dat2$ethnicity <- factor(dat2$ethnicity, levels = 1:8, labels = c("indigenous",
 dat2$currently.matriculated <- factor(dat2$currently.matriculated, levels =
                                               c(1,2), labels = c("yes", "no"))
 
-
-
+dat2$reason.not.matriculated <- factor(dat2$reason.not.matriculated, levels = 1:16,
+                                       labels = c("age", "completed", "finances",
+                                                  "poor performance", "for work", "leveling SENECYT",
+                                                  "illness", "for house maintenance",
+                                                  "family prohibition", "lack of educational facilities",
+                                                  "lack of interest", "embarrassment", "no space",
+                                                  "peer pressure", "to take care of children", 
+                                                  "other"))
+dat2$reason.for.migration <- factor(dat2$reason.for.migration, levels = 1:8,
+                                    labels = c("work", "increase salary",
+                                               "marriage", "academic",
+                                               "health", "property purchase",
+                                               "family reunion", "other"))
+dat2 <- transform(dat2, survey.date = as.yearmon(survey.date))
+                                    
 ## Save data
 saveRDS(dat2, "modified_data_1.csv")
 rm(list = ls())
