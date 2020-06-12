@@ -1,16 +1,13 @@
 ## This module merges columns and creates new variables. 
 
-
 ## Load packages and data set.
 
 library(pacman)
-pacman::p_load(dplyr)
-pacman::p_load(stringr)
+pacman::p_load(dplyr, stringr)
 
 dat0 <- readRDS("modified_data_1.csv")
 list0 <- readRDS("codes.csv")
 list0$codes <- as.integer(list0$codes)
-
 
 ## GOAL: know whether the individuals who were born at the survey
 ## location were born in rural or urban areas. 
@@ -77,7 +74,11 @@ be$place.of.birth <- sapply(be$place.of.birth, rurORurb)
 ## GOAL: Merge the three subsets back into a single data.frame.  
         
 dat1 <- rbind(be, ba, bsl)
-dat1$place.of.birth <- factor(dat1$place.of.birth)
+dat1$place.of.birth <- factor(dat1$place.of.birth, 
+                              levels = c("urban", "rural", "abroad",
+                                         "code not found"),
+                              labels = c("urban", "rural", "abroad",
+                                         "code not found"))
 
 
 ## GOAL: Replace codes in location.prior.address with factor
@@ -110,7 +111,6 @@ pal$location.prior.address <- sapply(pal$location.prior.address,
 ## GOAL: Merge the two subsets back into a single data.frame. 
 
 dat2 <- rbind(pab, pal)
-dat2$location.prior.address <- factor(dat2$location.prior.address)
 
 
 ## GOAL: Clean up unnecessary NA values in data set (where the
@@ -130,6 +130,11 @@ ym <- dat2 %>%
         filter(ever.moved == "yes" | is.na(ever.moved))
         
 dat3 <- rbind(nm, ym)
+dat3$location.prior.address <- factor(dat3$location.prior.address,
+                                      levels = c("urban", "rural", "abroad",
+                                                 "none", "code not found"),
+                                      labels = c("urban", "rural", "abroad",
+                                                 "none", "code not found"))
 
 
 ## METHOD: set obtained.degree to "no" if higher.education.level
@@ -142,7 +147,9 @@ dat3$obtained.degree <- factor(dat3$obtained.degree)
 
 
 ## Order columns in intuitive way.
-dat3 <- dat3[, c(13, 2, 3, 5, 6, 1, 7, 4, 8, 9, 10, 11, 12)]
+dat3 <- dat3[, c(13, 2, 3, 5, 6, 1, 7, 4, 8, 9, 10, 14, 11, 12)]
+
 
 ## We now actually now whether NA values are missing. 
-saveRDS(dat1, file = "modified_data_1.csv")
+saveRDS(dat3, file = "modified_data_2.csv")
+rm(list = ls())
