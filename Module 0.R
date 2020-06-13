@@ -6,7 +6,7 @@
 ## download need to be specified. 
 
 library(pacman)
-pacman::p_load(dplyr)
+pacman::p_load(dplyr, haven)
 
 
 ## download and store file function.
@@ -17,9 +17,21 @@ load.files <- function(x) {
                 download.file(x[1],temp)
                 unzip(temp, exdir=td, overwrite=TRUE)
                 
+                if(isTRUE(grepl(".csv", x[2]))) {
+                        
                 dat <- read.csv(file.path(td, x[2]), sep =';')
                 dat <- mutate(dat, date = x[3])
-                names(dat)[[1]] <- "survey.location"
+                names(dat)[[1]] <- "survey.location" 
+                
+                }
+                
+                else {
+                        
+                dat <- data.frame(read_sav(file.path(td, x[2])))
+                dat <- mutate(dat, date = x[3])
+                names(dat)[[1]] <- "survey.location"  
+                
+                }
                 
                 unlink(temp)
                 
@@ -56,7 +68,7 @@ y2017dec <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/201
               "2017-12")
 #y2017sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2017/Septiembre/201709_EnemduBDD_CSV.zip",
               #"201709_EnemduBDD_CSV/201709_EnemduBDD_15anios.csv",
-              #"201709")
+              #"2017-09")
 y2017jun <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2017/Junio/062017_bddEnemdu_CSV.zip",
               "201706_EnemduBDD_CSV/201706_EnemduBDD_15anio.sav.csv",
               "2017-06")
@@ -69,14 +81,23 @@ y2016dec <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/201
 y2016sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2016/Septiembre-2016/BDD_ENEMDU_SEPTIEMBRE_2016_CSV.zip",
               "201609_EnemduBDD_per.csv",
               "2016-09")
-##y2016jun <- c("https://www.ecuadorencifras.gob.ec//documentos/web-inec/EMPLEO/2016/Junio-2016/BDD-ENEMDU-Junio2016.zip",
-              ##"Publicadas/201606_EnemduBDD.SAV",
-              ##"06-2016")
+y2016jun <- c("https://www.ecuadorencifras.gob.ec//documentos/web-inec/EMPLEO/2016/Junio-2016/BDD-ENEMDU-Junio2016.zip",
+              "Publicadas/201606_EnemduBDD.SAV",
+              "2016-06")
+y2016mar <- c("https://www.ecuadorencifras.gob.ec//documentos/web-inec/EMPLEO/2016/Marzo-2016/BDD-ENEMDU-Marzo2016.zip",
+              "201603_EnemduBDD.sav",
+              "2016-03")
+y2015dec <- c("https://www.ecuadorencifras.gob.ec//documentos/web-inec/EMPLEO/2015/Diciembre-2015/201512_EnemduBDD_publicar.zip",
+              "",
+              "2015-12")
+##y2015sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2015/Septiembre-2015/201509_EnemduBDD_CSV.zip",
+              ##"",
+              ##"2015-09")
 
 
 links <- list(y2019sep, y2019jun, y2019mar, y2018dec, y2018sep,
-              y2018jun, y2018mar, y2017dec, y2017jun, y2017mar,
-              y2016dec, y2016sep)
+y2018jun, y2018mar, y2017dec, y2017jun, y2017mar,
+y2016dec, y2016sep, y2016jun, y2016mar)
 
 
 ## Create a list of dataframes. 
