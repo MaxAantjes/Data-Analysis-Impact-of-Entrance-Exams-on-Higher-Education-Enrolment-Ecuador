@@ -3,7 +3,7 @@
 
 ## Create last.migration variable. Note: rows with outside migration are lost. 
 library(pacman)
-pacman::p_load(dplyr, reshape2)
+pacman::p_load(dplyr, reshape2, ggplot2)
 dat0 <- readRDS("modified_data_2.csv")
 
 
@@ -20,8 +20,8 @@ first.years <- dat0 %>%
 ## METHOD: look for age ranges with at least 10 first year students.
 
 table1 <- dcast(first.years, age ~ no.years.completed)
-table2 <- subset(table1, table1[[2]] > 10)
-ages.of.interest <- as.vector(table2[[1]])
+table1 <- subset(table1, table1[[2]] > 10)
+ages.of.interest <- as.vector(table1[[1]])
 
 ## METHOD: filter data set for relevant age range. Migrants
 ## or citizens that have returned from abroad are removed from the
@@ -33,6 +33,11 @@ total <- dat0 %>%
                        location.prior.address == "rural" |
                        location.prior.address == "none") %>%
         filter(place.of.birth == "urban" | place.of.birth == "rural")
+
+first.years <- total %>%
+        filter(higher.education.level == "undergraduate" & 
+                       no.years.completed == 1 & 
+                       currently.matriculated == "yes")
 
 
 ## ----------------------------------------------------------------##
@@ -68,8 +73,9 @@ number.rural <- data.frame(unlist(lapply(list1, nrow)))
 
 CA.table$numb.urban <- number.urban[, 1]
 CA.table$numb.rural <- number.rural[, 1]
-CA.table$prop.urban <- CA.table[, 2]/number.urban[, 1]
-CA.table$prop.rural <- CA.table[, 3]/number.rural[, 1]
+CA.table$prop.urban <- CA.table$urban/CA.table$numb.urban
+CA.table$prop.rural <- CA.table$rural/CA.table$numb.rural
+CA.table$ratio <- CA.table$prop.rural/CA.table$prop.urban
 
 
 ## ----------------------------------------------------------------##
@@ -105,8 +111,10 @@ number.rural1 <- data.frame(unlist(lapply(list1, nrow)))
 
 PB.table$numb.urban <- number.urban1[, 1]
 PB.table$numb.rural <- number.rural1[, 1]
-PB.table$prop.urban <- PB.table[, 2]/number.urban1[, 1]
-PB.table$prop.rural <- PB.table[, 3]/number.rural1[, 1]
+PB.table$prop.urban <- PB.table$urban/PB.table$numb.urban
+PB.table$prop.rural <- PB.table$rural/PB.table$numb.rural
+PB.table$ratio <- PB.table$prop.rural/PB.table$prop.urban
+
 
 
 ## ----------------------------------------------------------------##
@@ -115,50 +123,57 @@ PB.table$prop.rural <- PB.table[, 3]/number.rural1[, 1]
 ## rural in terms of PRIOR.ADDRESS and CURRENT.ADDRESS per survey.date. 
 
 
-## METHOD: create a variable which indicates whether someone has lived 
-## at least less than 5 years in an urban area (including 0 years) or
-## at least less than 5 years in a rural area.  
+## METHOD: create a variable which indicates whether someone has either lives
+## in a rural/urban area OR has changed area for academic reasons. 
 
-dat1A <- total %>%
-        filter(current.address == "rural" & time.at.current.address > 4 | 
-                       location.prior.address == "rural"& current.address == "urban" & 
-                       time.at.current.address < 5) %>%
-        mutate(time.urban.rural = "< 5 years urban")
-
-dat1B <- total %>%
-        filter(current.address == "urban" & location.prior.address == "urban" |
-                       current.address == "urban" & time.at.current.address > 4 |
-                       current.address == "rural" & time.at.current.address < 5) %>%
-        mutate(time.urban.rural = "< 5 years rural")
-
-isTRUE(nrow(total) == nrow(dat1A)+nrow(dat1B)) ## Check no rows were lost.
-
-dat1 <- rbind(dat1A, dat1B)
-
-## METHOD: create a table of the number of individuals enrolled as 
-## undergraduates at university by the variables PLACE.OF.BIRTH and SURVEY.DATE. 
-
-first.years.dat1 <- dat1 %>%
+first.years.dat1R <- total %>%
+        filter(current.address == "rural" & ever.moved == "no" | # always lived rural
+                       current.address == "rural" & ever.moved == "yes" &
+                       location.prior.address == "urban" & !reason.for.migration == "academic" | # moved from urban to rural but not for academic reasons
+                       current.address == "urban" & ever.moved == "yes" &
+                       location.prior.address == "rural" & reason.for.migration == "academic" | # moved from rural to urban for academic reasons
+                       current.address == "rural" & location.prior.address == "rural") %>% # always rural but moved
         filter(higher.education.level == "undergraduate" & 
                        no.years.completed == 1 & 
-                       currently.matriculated == "yes")
+                       currently.matriculated == "yes")  %>%
+        mutate(identification = "rural")
+first.years.dat1U <- total %>%
+        filter(current.address == "urban" & ever.moved == "no" | ## always lived urban
+                       current.address == "rural" & ever.moved == "yes" &
+                       location.prior.address == "urban" & reason.for.migration == "academic" | # moved from urban to rural for academic reasons
+                       current.address == "urban" & ever.moved == "yes" &
+                       location.prior.address == "rural" & !reason.for.migration == "academic" | # moved from rural to urban but for non academic reasons
+                       current.address == "urban" & location.prior.address == "urban") %>% # always urban but moved
+        filter(higher.education.level == "undergraduate" & 
+                       no.years.completed == 1 & 
+                       currently.matriculated == "yes")  %>%
+        mutate(identification = "urban")
+
+
+## METHOD: Check no rows were lost or duplicated and bind rows.
+
+isTRUE(nrow(first.years) == nrow(first.years.dat1R)+nrow(first.years.dat1U)) 
+first.years.dat1 <- rbind(first.years.dat1R, first.years.dat1U)
+
+
+## METHOD: create table based on survey date and identification. 
         
-PA.table <- dcast(first.years.dat1, survey.date ~ time.urban.rural)
+PA.table <- dcast(first.years.dat1, survey.date ~ identification)
 
 
 ## METHOD: count total number of individuals identified as urban
 ## by PLACE.OF.BIRTH. 
 
-dat.urban2 <- dat1 %>%
-        filter(time.urban.rural == "< 5 years rural")
+dat.urban2 <- total %>%
+        filter(current.address == "urban")
 list0 <- split(dat.urban2, dat.urban2$survey.date)
 number.urban2 <- data.frame(unlist(lapply(list0, nrow))) 
 
 ## METHOD: count total number of individuals identified as rural
 ## by PLACE.OF.BIRTH.
 
-dat.rural2 <- dat1 %>%
-        filter(time.urban.rural == "< 5 years urban")
+dat.rural2 <- total %>%
+        filter(current.address == "rural")
 list1 <- split(dat.rural2, dat.rural2$survey.date)
 number.rural2 <- data.frame(unlist(lapply(list1, nrow))) 
 
@@ -167,13 +182,45 @@ number.rural2 <- data.frame(unlist(lapply(list1, nrow)))
 
 PA.table$numb.urban <- number.urban2[, 1]
 PA.table$numb.rural <- number.rural2[, 1]
-PA.table$prop.urban <- PA.table[, 2]/number.urban2[, 1]
-PA.table$prop.rural <- PA.table[, 3]/number.rural2[, 1]
+PA.table$prop.urban <- PA.table$urban/PA.table$numb.urban
+PA.table$prop.rural <- PA.table$rural/PA.table$numb.rural
+PA.table$ratio <- PA.table$prop.rural/PA.table$prop.urban
+
+
+## ----------------------------------------------------------------##
+
+## GOAL: explore the difference in academic migration between
+## those of rural and urban origin. 
+academic.migration <- first.years.dat1 %>%
+        filter(reason.for.migration == "academic") %>%
+        mutate(identification = factor(
+                ifelse(identification == "rural", 
+                       "rural.to.urban.migration", 
+                       "urban.to.rural.migration")))
+
+dat.urban3 <- first.years.dat1U
+list0 <- split(dat.urban3, dat.urban3$survey.date)
+number.urban3 <- data.frame(unlist(lapply(list0, nrow))) 
+
+## METHOD: count total number of individuals identified as rural
+## by PLACE.OF.BIRTH.
+
+dat.rural3 <- first.years.dat1R
+list1 <- split(dat.rural3, dat.rural3$survey.date)
+number.rural3 <- data.frame(unlist(lapply(list1, nrow)))
+
+migration.table <- dcast(academic.migration, survey.date ~ identification)
+migration.table$numb.rural <- number.rural3[, 1]
+migration.table$numb.urban <- number.urban3[, 1]
+migration.table$prop.r.to.u.migration <- migration.table$rural.to.urban.migration/migration.table$numb.rural
+migration.table$prop.u.to.r.migration <- migration.table$urban.to.rural.migration/migration.table$numb.urban
+migration.table$ratio.r.over.u <- migration.table$prop.r.to.u.migration/migration.table$prop.u.to.r.migration
 
 
 ## Save data.
-saveRDS(PA.table, "past.address.table")
-saveRDS(PB.table, "place.of.birth.table")
-saveRDS(CA.table, "current.address.table")
+saveRDS(PA.table, "past.address.table.csv")
+saveRDS(PB.table, "place.of.birth.table.csv")
+saveRDS(CA.table, "current.address.table.csv")
+saveRDS(migration.table, "academic.migration.csv")
 rm(list = ls())
 
