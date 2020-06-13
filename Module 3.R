@@ -147,8 +147,10 @@ dat3$obtained.degree <- factor(dat3$obtained.degree)
 
 
 ## Order columns in intuitive way.
-dat3 <- dat3[, c(13, 2, 3, 5, 6, 1, 7, 4, 8, 9, 10, 14, 11, 12)]
+dat3 <- dat3[, c(13, 2, 3, 5, 6, 1, 7, 4, 15, 8, 9, 10, 14, 11, 12)]
 
+dat3 <- dat3 %>%
+        mutate(min.years.urban = )
 
 ## We now actually now whether NA values are missing. 
 saveRDS(dat3, file = "modified_data_2.csv")
