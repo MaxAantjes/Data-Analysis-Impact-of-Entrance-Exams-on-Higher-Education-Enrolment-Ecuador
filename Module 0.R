@@ -9,13 +9,15 @@ library(pacman)
 pacman::p_load(dplyr, haven)
 
 
-## download and store file function.
+## GOAL: create download and store file function.
+
 load.files <- function(x) {
         
                 td = tempdir()
                 temp = tempfile(tmpdir=td, fileext=".zip")
                 download.file(x[1],temp)
                 unzip(temp, exdir=td, overwrite=TRUE)
+                list <- tolower(list.files(td))
                 
                 if(isTRUE(grepl(".csv", x[2]))) {
                         
@@ -36,10 +38,11 @@ load.files <- function(x) {
                 unlink(temp)
                 
                 return(dat)
+                
 }
    
 
-## Create list of links to files, filepaths and dates per 
+## GOAL: create list of links to files, filepaths and dates per 
 ## dataframe. 
 
 y2019sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2019/Septiembre/BDD_DATOS_ABIERTOS_ENEMDU_%202019_09_CSV.zip",
@@ -66,9 +69,6 @@ y2018mar <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/201
 y2017dec <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2017/Diciembre/BASES-DATOS-ENENDU_CSV.zip",
               "BASES_CSV/201712_EnemduBDD_15anios.csv",
               "2017-12")
-#y2017sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2017/Septiembre/201709_EnemduBDD_CSV.zip",
-              #"201709_EnemduBDD_CSV/201709_EnemduBDD_15anios.csv",
-              #"2017-09")
 y2017jun <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2017/Junio/062017_bddEnemdu_CSV.zip",
               "201706_EnemduBDD_CSV/201706_EnemduBDD_15anio.sav.csv",
               "2017-06")
@@ -88,16 +88,25 @@ y2016mar <- c("https://www.ecuadorencifras.gob.ec//documentos/web-inec/EMPLEO/20
               "201603_EnemduBDD.sav",
               "2016-03")
 y2015dec <- c("https://www.ecuadorencifras.gob.ec//documentos/web-inec/EMPLEO/2015/Diciembre-2015/201512_EnemduBDD_publicar.zip",
-              "",
+              "201512_EnemduBDD_publicar/201512_EnemduBDD_15anios.sav",
               "2015-12")
-##y2015sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2015/Septiembre-2015/201509_EnemduBDD_CSV.zip",
-              ##"",
-              ##"2015-09")
+y2015jun <- c("https://www.ecuadorencifras.gob.ec//documentos/web-inec/EMPLEO/2015/Junio-2015/201506_EnemduBDD.zip",
+              "bdd_enemdu_15anios_06_2015/201506_EnemduBDD_15anios.sav",
+              "2015-06")
+y2015mar <- c("https://www.ecuadorencifras.gob.ec//documentos/web-inec/EMPLEO/2015/Marzo-2015/201503_EnemduBDD_15anios.zip",
+              "201503_EnemduBDD_15anios.sav",
+              "2015-03")
+y2014dec <- c("https://www.ecuadorencifras.gob.ec//documentos/web-inec/EMPLEO/Empleo-Diciembre/Nuevo_Marco_Conceptual/201412_EnemduBDD_15anios.zip", 
+              "201412_EnemduBDD_15anios.sav", 
+              "2014-12")
+y2014sep <- c("https://www.ecuadorencifras.gob.ec//documentos/web-inec/EMPLEO/Empleo-sep-2014/201409_EnenduBDD_15anios.zip",
+              "201409_EnemduBDD_15anios.sav",
+              "2014-09")
 
 
-links <- list(y2019sep, y2019jun, y2019mar, y2018dec, y2018sep,
-y2018jun, y2018mar, y2017dec, y2017jun, y2017mar,
-y2016dec, y2016sep, y2016jun, y2016mar)
+links <- list(y2019sep, y2019jun, y2019mar, y2018dec, y2018sep, y2018jun, y2018mar, 
+              y2017dec, y2017jun, y2017mar, y2016dec, y2016sep, y2016jun, y2016mar,
+              y2015dec, y2015jun, y2015mar, y2014dec, y2014sep)
 
 
 ## Create a list of dataframes. 
@@ -105,7 +114,53 @@ y2016dec, y2016sep, y2016jun, y2016mar)
 all.data <- lapply(links, load.files)
 
 
+## Load two dataframes with zipfiles within zipfiles.
+
+add.to.list <- function(element, list) {
+        
+        a <- length(list) + 1
+        list[a] <- element
+        return(list)
+}
+
+
+load.double.zip <- function(x) {
+        
+        td = tempdir()
+        temp = tempfile(tmpdir=td, fileext=".zip")
+        download.file(x[1],temp)
+        unzip(temp, exdir=td, overwrite=TRUE)
+        unzip(paste0(file.path(td), x[2]), exdir = td)
+        
+        dat <- read.csv(file.path(td, x[3]), sep =';')
+        dat <- mutate(dat, date = x[4])
+        names(dat)[[1]] <- "survey.location" 
+        
+        unlink(temp)
+        
+        return(dat)
+        
+}
+
+
+y2015sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2015/Septiembre-2015/201509_EnemduBDD_CSV.zip",
+              "\\201509_EnemduBDD_CSV.zip",
+              "\\201509_EnemduBDD_CSV\\201509_EnemduBDD_15anios.csv",
+              "2015-09")
+
+y2017sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2017/Septiembre/201709_EnemduBDD_CSV.zip",
+              "\\bases csv\\201709_EnemduBDD_CSV.zip",
+              "\\201709_EnemduBDD_CSV\\201709_EnemduBDD_15anios.csv",
+              "2017-09")
+
+
+y2015sep <- load.double.zip(y2015sep)
+y2017sep <- load.double.zip(y2017sep)
+all.data.1 <- add.to.list(y2015sep, all.data)
+all.data.1 <- add.to.list(y2017sep, all.data.1) 
+
+
 ## save data. 
 
-saveRDS(all.data, "raw_data")
+saveRDS(all.data.1, "raw_data")
 rm(list = ls())
