@@ -118,17 +118,19 @@ Ecuadorian government stemming from 2019 was used:
 
 To measure anual to anual changes in the access to education, the
 analysis counts the amount of **first-year** students who are **at the
-time of the survey** attending higher education. It then classsifies
-them as either rural or urban. The number of rural first-year students
-and the number of urban first-year students are subsequently divided by
-the total number of rural surveyees and urban surveyees in the
-apropriate age range, respectively. These standardised proportions give
-an indication of the percentage of the urban and rural population of
-interest who are at the time of the survey first year students. Finally,
-the standardised rural proportion is divided by the standardised urban
-proportion to generate a ratio in percentage form. These steps are
-followed for each individual survey to generate a time-series of ratios
-in percentage form.
+time of the survey** attending higher education. The reason for counting
+first years is that there’s no way to differentiate annual enrolment
+from graduation years, as undergraduate studies in Ecuador vary in
+length. It then classsifies them as either rural or urban. The number of
+rural first-year students and the number of urban first-year students
+are subsequently divided by the total number of rural surveyees and
+urban surveyees in the apropriate age range, respectively. These
+standardised proportions give an indication of the percentage of the
+urban and rural population of interest who are at the time of the survey
+first year students. Finally, the standardised rural proportion is
+divided by the standardised urban proportion to generate a ratio in
+percentage form. These steps are followed for each individual survey to
+generate a time-series of ratios in percentage form.
 
 *Interpretation of ratio*: If the calculated ratio equals 100%, access
 to higher education is equal in rural and urban areas. If the ratio is
