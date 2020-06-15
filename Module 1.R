@@ -6,8 +6,9 @@
 library(pacman)
 pacman::p_load(dplyr, zoo)
 
-dat0 <- readRDS("raw_data")
-
+dat0A <- readRDS("raw_data_1")
+dat0B <- readRDS("raw_data_2")
+dat0 <- c(dat0A, dat0B)
 
 ## GOAL: create dataframe of multiple dataframes by selecting
 ## the columns of interest they have in common.
@@ -26,15 +27,37 @@ namestolower <- function(x) {
 dat0 <- lapply(dat0, namestolower)
 
 
+## METHOD: create column of NA values if question not asked in 
+## survey.
+
+addcolNA <- function(x, pattern) {
+        
+        a <- names(x)
+        b <- length(x) + 1
+        
+        if(sum(grepl(pattern, a)) < 1) {
+                
+                x <- x %>%
+                        mutate(new_col = NA) 
+                
+                names(x)[b] <- pattern
+                
+        }
+        
+        return(x)       
+        
+}
+
+dat1 <- lapply(dat0, addcolNA, pattern = "p15aa")
+dat1 <- lapply(dat1, addcolNA, pattern = "p15ab")
+
 ## METHOD: Select columns of interest and bind datasets. 
 
-dat1 <- lapply(dat0, select, survey.location, p03, p15, p15aa, p15ab, 
+dat1 <- lapply(dat1, select, survey.location, p03, p15, p15aa, p15ab, 
                p16a, p16b, p17a, p17b, p10a, p10b, p07, p12a, p12b, 
                date, p09, p18)
 
-dat2 <- rbind(dat1[[1]], dat1[[2]], dat1[[3]], dat1[[4]], dat1[[5]],
-              dat1[[6]], dat1[[7]], dat1[[8]], dat1[[9]], dat1[[10]],
-              dat1[[11]], dat1[[12]])
+dat2 <- do.call(rbind, dat1)
 
 
 ## GOAL: Tidy columnnames. Create factor variables in line with codebook. 
