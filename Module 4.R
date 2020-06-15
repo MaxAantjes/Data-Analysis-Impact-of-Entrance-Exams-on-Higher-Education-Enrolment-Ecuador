@@ -3,7 +3,7 @@
 
 ## Create last.migration variable. Note: rows with outside migration are lost. 
 library(pacman)
-pacman::p_load(dplyr, reshape2, ggplot2)
+pacman::p_load(dplyr, reshape2, ggplot2, zoo)
 dat0 <- readRDS("modified_data_2.csv")
 
 
@@ -20,7 +20,7 @@ first.years <- dat0 %>%
 ## METHOD: look for age ranges with at least 10 first year students.
 
 table1 <- dcast(first.years, age ~ no.years.completed)
-table1 <- subset(table1, table1[[2]] > 10)
+table1 <- subset(table1, table1[[2]] > 500)
 ages.of.interest <- as.vector(table1[[1]])
 
 ## METHOD: filter data set for relevant age range. Migrants
@@ -74,9 +74,11 @@ number.rural <- data.frame(unlist(lapply(list1, nrow)))
 
 CA.table$numb.urban <- number.urban[, 1]
 CA.table$numb.rural <- number.rural[, 1]
-CA.table$prop.urban <- CA.table$urban/CA.table$numb.urban
-CA.table$prop.rural <- CA.table$rural/CA.table$numb.rural
-CA.table$ratio <- CA.table$prop.rural/CA.table$prop.urban
+CA.table$total <- CA.table$urban+CA.table$rural
+CA.table$CA.prop.urban <- CA.table$urban/CA.table$numb.urban
+CA.table$CA.prop.rural <- CA.table$rural/CA.table$numb.rural
+CA.table$prop.total <- CA.table$total/(CA.table$numb.rural+CA.table$numb.urban)
+CA.table$CA.rural.urban.ratio <- (CA.table$CA.prop.rural/CA.table$CA.prop.urban)*100
 
 
 ## ----------------------------------------------------------------##
@@ -115,9 +117,11 @@ number.rural1 <- data.frame(unlist(lapply(list1, nrow)))
 
 PB.table$numb.urban <- number.urban1[, 1]
 PB.table$numb.rural <- number.rural1[, 1]
-PB.table$prop.urban <- PB.table$urban/PB.table$numb.urban
-PB.table$prop.rural <- PB.table$rural/PB.table$numb.rural
-PB.table$ratio <- PB.table$prop.rural/PB.table$prop.urban
+PB.table$total <- PB.table$urban+PB.table$rural
+PB.table$PB.prop.urban <- PB.table$urban/PB.table$numb.urban
+PB.table$PB.prop.rural <- PB.table$rural/PB.table$numb.rural
+PB.table$prop.total <- PB.table$total/(PB.table$numb.rural+PB.table$numb.urban)
+PB.table$PB.rural.urban.ratio <- (PB.table$PB.prop.rural/PB.table$PB.prop.urban)*100
 
 
 
@@ -186,9 +190,11 @@ number.rural2 <- data.frame(unlist(lapply(list1, nrow)))
 
 PA.table$numb.urban <- number.urban2[, 1]
 PA.table$numb.rural <- number.rural2[, 1]
-PA.table$prop.urban <- PA.table$urban/PA.table$numb.urban
-PA.table$prop.rural <- PA.table$rural/PA.table$numb.rural
-PA.table$ratio <- PA.table$prop.rural/PA.table$prop.urban
+PA.table$total <- PA.table$urban+PA.table$rural
+PA.table$PA.prop.urban <- PA.table$urban/PA.table$numb.urban
+PA.table$PA.prop.rural <- PA.table$rural/PA.table$numb.rural
+PA.table$prop.total <- PA.table$total/(CA.table$numb.rural+PA.table$numb.urban)
+PA.table$PA.rural.urban.ratio <- (PA.table$PA.prop.rural/PA.table$PA.prop.urban)*100
 
 
 ## ----------------------------------------------------------------##
@@ -218,7 +224,7 @@ migration.table$numb.rural <- number.rural3[, 1]
 migration.table$numb.urban <- number.urban3[, 1]
 migration.table$prop.r.to.u.migration <- migration.table$rural.to.urban.migration/migration.table$numb.rural
 migration.table$prop.u.to.r.migration <- migration.table$urban.to.rural.migration/migration.table$numb.urban
-migration.table$ratio.r.over.u <- migration.table$prop.r.to.u.migration/migration.table$prop.u.to.r.migration
+migration.table$ratio.r.over.u <- (migration.table$prop.r.to.u.migration/migration.table$prop.u.to.r.migration)*100
 
 
 ## Save data.
