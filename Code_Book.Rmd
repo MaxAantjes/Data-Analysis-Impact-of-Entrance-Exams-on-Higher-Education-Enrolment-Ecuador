@@ -110,6 +110,9 @@ knitr::kable(Data, format = "markdown")
 
 ```
 
+<div style="margin-bottom:50px;">
+</div>
+
 ### Analysis of Gap in Access to Higher Education
 
 Below is a list with information about the variables derived from the tidy data set, including their name, class, description, levels and the R code module in which they were created, as well as the tidy data set variables they are derived from. 
@@ -138,6 +141,8 @@ Graph 3 indicates that in 2008, urban respondents were almost 4x as likely to be
 
 Without having conducted statistical tests, the data seems to support both ha1 and ha2. Additionally, it seems to indicate that the introduction of the entrance exam test coincided with a fall in undergraduate enrolment nationwide and a deepening of the gap between rural and urban access to education. 
 
+<div style="margin-bottom:50px;">
+</div>
 
 ```{r, echo = FALSE}
 library(pacman)
@@ -235,4 +240,3 @@ print(comb.prop.rur.plot)
 print(comb.ratio.plot)
 
 ```
-

@@ -213,6 +213,10 @@ in which they were created.
 | 1        | no.years.completed     | p10b                 | The number of years a respondent who is not attending classes has completed in their highest level of education. The year a respondent who is attending classes is matriculated in.                                                                                                                                                                                                                                                                                                                | integer | 1 = year 1, 2 = year 2, etc.                                                                                        |
 | 1        | currently.matriculated | p07                  | Response to ’Are you currently attending classes?                                                                                                                                                                                                                                                                                                                                                                                                                                                  | factor  | 1 = yes, 2 = no                                                                                                     |
 
+<div style="margin-bottom:50px;">
+
+</div>
+
 ### Analysis of Gap in Access to Higher Education
 
 Below is a list with information about the variables derived from the
@@ -256,5 +260,9 @@ both ha1 and ha2. Additionally, it seems to indicate that the
 introduction of the entrance exam test coincided with a fall in
 undergraduate enrolment nationwide and a deepening of the gap between
 rural and urban access to education.
+
+<div style="margin-bottom:50px;">
+
+</div>
 
 ![](Code_Book_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->![](Code_Book_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->![](Code_Book_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->
