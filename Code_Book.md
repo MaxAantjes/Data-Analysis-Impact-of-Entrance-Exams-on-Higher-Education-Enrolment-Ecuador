@@ -2,7 +2,7 @@
 title: "Code Book"
 author: "Max Aantjes"
 date: "07/06/2020"
-output: html_document
+output: rmarkdown::github_document
 ---
 <div style="margin-bottom:100px;">
 ```{r setup, include=FALSE}
