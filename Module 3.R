@@ -9,6 +9,18 @@ dat0 <- readRDS("modified_data_1.csv")
 list0 <- readRDS("codes.csv")
 list0$codes <- as.integer(list0$codes)
 
+
+## GOAL: know whether there is information on the place of birth
+## of the individual.
+
+## METHOD: select rows where born.at.current.address equals
+## NA. Replace place.of.birth. with NA. 
+
+bna <- dat0 %>%
+        filter(is.na(born.at.current.address)) %>%
+        mutate(place.of.birth = NA) %>%
+        select(-born.at.current.address)
+
 ## GOAL: know whether the individuals who were born at the survey
 ## location were born in rural or urban areas. 
 
@@ -73,7 +85,7 @@ be$place.of.birth <- sapply(be$place.of.birth, rurORurb)
 
 ## GOAL: Merge the three subsets back into a single data.frame.  
         
-dat1 <- rbind(be, ba, bsl)
+dat1 <- rbind(be, ba, bsl, bna)
 dat1$place.of.birth <- factor(dat1$place.of.birth, 
                               levels = c("urban", "rural", "abroad",
                                          "code not found"),
@@ -149,8 +161,6 @@ dat3$obtained.degree <- factor(dat3$obtained.degree)
 ## Order columns in intuitive way.
 dat3 <- dat3[, c(13, 2, 3, 5, 6, 1, 7, 4, 15, 8, 9, 10, 14, 11, 12)]
 
-dat3 <- dat3 %>%
-        mutate(min.years.urban = )
 
 ## We now actually now whether NA values are missing. 
 saveRDS(dat3, file = "modified_data_2.csv")
