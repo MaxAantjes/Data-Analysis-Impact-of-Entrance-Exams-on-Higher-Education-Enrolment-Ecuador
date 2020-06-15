@@ -126,17 +126,19 @@ apropriate age range, respectively. These standardised proportions give
 an indication of the percentage of the urban and rural population of
 interest who are at the time of the survey first year students. Finally,
 the standardised rural proportion is divided by the standardised urban
-proportion to generate a ratio. These steps are followed for each
-individual survey to generate a time-series of ratios.
+proportion to generate a ratio in percentage form. These steps are
+followed for each individual survey to generate a time-series of ratios
+in percentage form.
 
-*Interpretation of ratio*: If the calculated ratio equals 1, access to
-higher education is equal in rural and urban areas. If the ratio is
-lower than 1, access to higher education is lower in rural areas than in
-urban areas. If the ratio is higher than 1, access to higher education
-is higher in rural areas than in urban areas. Furthermore, if the ratio
-does not equal 1 but approaches 1 over time, the gap in the access to
-higher education between the two areas decreases. Conversely, if the
-value between the ratio and 1 increases, this gap increases.
+*Interpretation of ratio*: If the calculated ratio equals 100%, access
+to higher education is equal in rural and urban areas. If the ratio is
+lower than 100%, access to higher education is lower in rural areas than
+in urban areas. If the ratio is higher than 100%, access to higher
+education is higher in rural areas than in urban areas. Furthermore, if
+the ratio approaches 100% over time, the gap in the access to higher
+education between the two areas decreases. Conversely, if the distance
+between the ratio values and 100% increases over time, this gap
+increases.
 
 *Interpretation of rural/urban classification*: One important
 specification for the analysis is the classification of survey
@@ -162,8 +164,8 @@ respondents were used and compared in the analysis:
     represented in survey responses as a postcode. A function is used to
     classify postcodes into rural and urban areas according to 2019
     classification by the Ecuadorian government. **Potential
-    limitation**: data on place of birth is (oddly) only available from
-    December 2013 onwards. Additionally, there are over 30.000
+    limitation**: data on place of birth is surprisingly only available
+    from December 2013 onwards. Additionally, there are over 30.000
     respondents who indicated they were *not* born at their current
     address, but also that they have *never* moved. How to interpret
     this data is unclear. For example, it could be the case that the
@@ -190,9 +192,12 @@ Most analysed variables in the tidied data set are based on one or a
 combination of the questions in the census form. Again, this form and
 its codebook are available for almost every survey date present in the
 links above (for data before 2014 it is only available in the .sav files
-themselves). The variable names, their class, their respective question
-identification codes, a description, as well as their levels and the R
-code module in which they were created.
+themselves). Below is a list with information about the variables in the
+generated tidy data set, including their name, class, respective
+question identification codes, description, levels and the R code module
+in which they were created.
+
+### Tidied Data Set
 
 | ModuleNO | Name                   | QuestionID           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Class   | Levels                                                                                                              |
 | :------- | :--------------------- | :------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------ | :------------------------------------------------------------------------------------------------------------------ |
@@ -207,3 +212,49 @@ code module in which they were created.
 | 1        | higher.education.level | p10a                 | Highest level of education the respondent is or was enrolled in. Originally 10 levels, but reduced to 4 by classifying all non-higher education levels as one level.                                                                                                                                                                                                                                                                                                                               | factor  | 1 = none, 2 = technical school, 3 = undergraduate, 4 = postgraduate                                                 |
 | 1        | no.years.completed     | p10b                 | The number of years a respondent who is not attending classes has completed in their highest level of education. The year a respondent who is attending classes is matriculated in.                                                                                                                                                                                                                                                                                                                | integer | 1 = year 1, 2 = year 2, etc.                                                                                        |
 | 1        | currently.matriculated | p07                  | Response to ’Are you currently attending classes?                                                                                                                                                                                                                                                                                                                                                                                                                                                  | factor  | 1 = yes, 2 = no                                                                                                     |
+
+### Analysis of Gap in Access to Higher Education
+
+Below is a list with information about the variables derived from the
+tidy data set, including their name, class, description, levels and the
+R code module in which they were created, as well as the tidy data set
+variables they are derived from.
+
+| ModuleNO | Name              | BaseVariables                                                                                                                                                        | Description                                                                                                                                                                                                                                                                                                            | Class   | Levels |
+| :------- | :---------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------ | :----- |
+| 4        | ages.of.interest  | age, currently.matriculated, number.of.years.completed, higher.education.level                                                                                       | List of age groups which in the total data set (all survey.dates) count more 500 registered first-year undergraduate students. This is the population of interest used for standardization purposes. This minimum is purposefully set high due to the differences in the aging of population in rural and urban areas. | vector  | NA     |
+| 4        | prop.rural        | current.address, location.prior.address, ever.moved, place.of.birth, reason.for.migration, higher.education.level, currently.matriculated, number.of.years.completed | Proportion of rural population within ages of interest who are at the time of the survey enrolled as first year undergraduates. Classification according to PA, CA or PB method.                                                                                                                                       | numeric | NA     |
+| 4        | prop.urban        | current.address, location.prior.address, ever.moved, place.of.birth, reason.for.migration, higher.education.level, currently.matriculated, number.of.years.completed | Proportion of urban population within ages of interest who are at the time of the survey enrolled as first year undergraduates. Classification according to PA, CA or PB method.                                                                                                                                       | numeric | NA     |
+| 4        | urban.rural.ratio | prop.rural, prop.urban                                                                                                                                               | ratio of the proportions of urban and rural population enrolled as first year students. The direction of the ratio is rural:urban. Classification according to PA, CA or PB method. Interpretation of ratio explained in ‘method’ section.                                                                             | numeric | NA     |
+
+<div style="margin-bottom:50px;">
+
+</div>
+
+## Preliminary Results
+
+Below are the results found in the analysis. Graph 1 and graph 2
+indicate that there was an upward trajectory in the access to higher
+education in rural and urban areas between 2008 and 2009. Between 2009
+to 2013 access to higher education stagnated in both rural and urban
+areas, between 3-4% and 7-9 % respectively. This period was followed by
+a steep drop from 2013 to 2015 to under 2% in rural areas and a similar
+drop to under 6% in urban areas. From 2015 onwards, the access to higher
+education in both areas gradually recovered.
+
+Graph 3 indicates that in 2008, urban respondents were almost 4x as
+likely to be enrolled in higher education. From 2008 to 2009 this gap
+decreased to less than 3x. However, the urban population was harder hit
+by the fall to access in education between 2009 and 2013, with the ratio
+dropping to a minimum of less than 23-25% according to the PA and CA
+method, and 27.5% according to the PB method. In subsequent years, the
+ratio increased from this minimum to around 38-43%. The fluctuation of
+this increase is noteworthy.
+
+Without having conducted statistical tests, the data seems to support
+both ha1 and ha2. Additionally, it seems to indicate that the
+introduction of the entrance exam test coincided with a fall in
+undergraduate enrolment nationwide and a deepening of the gap between
+rural and urban access to education.
+
+![](Code_Book_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->![](Code_Book_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->![](Code_Book_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->
