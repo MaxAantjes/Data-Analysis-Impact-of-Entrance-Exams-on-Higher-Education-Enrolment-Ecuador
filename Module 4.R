@@ -32,7 +32,8 @@ total <- dat0 %>%
         filter(location.prior.address == "urban" | 
                        location.prior.address == "rural" |
                        location.prior.address == "none") %>%
-        filter(place.of.birth == "urban" | place.of.birth == "rural")
+        filter(place.of.birth == "urban" | place.of.birth == "rural" |
+                       is.na(place.of.birth))
 
 first.years <- total %>%
         filter(higher.education.level == "undergraduate" & 
@@ -87,7 +88,10 @@ CA.table$ratio <- CA.table$prop.rural/CA.table$prop.urban
 ## METHOD: create a table of the number of individuals enrolled as 
 ## undergraduates at university by the variables PLACE.OF.BIRTH and SURVEY.DATE. 
 
-PB.table <- dcast(first.years, survey.date ~ place.of.birth)
+first.years.PB <- first.years %>%
+        filter(!is.na(place.of.birth))
+
+PB.table <- dcast(first.years.PB, survey.date ~ place.of.birth)
 
 
 ## METHOD: count total number of individuals identified as urban
