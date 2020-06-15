@@ -73,11 +73,9 @@ Additionally, division of postcodes in rural and urban areas was required for th
 
 To measure anual to anual changes in the access to education, the analysis counts the amount of **first-year** students who are **at the time of the survey** attending higher education. It then classsifies them as either rural or urban. The number of rural first-year students and the number of urban first-year students are subsequently divided by the total number of rural surveyees and urban surveyees in the apropriate age range, respectively. These standardised proportions give an indication of the percentage of the urban and rural population of interest who are at the time of the survey first year students. Finally, the standardised rural proportion is divided by the standardised urban proportion to generate a ratio. These steps are followed for each individual survey to generate a time-series of ratios. 
 
-*Interpretation of ratio*: If the calculated ratio equals 1, access to higher education is equal in rural and urban areas. If the ratio is lower than 1, access to higher education is lower in rural areas than in urban areas. If the ratio is higher than 1, access to higher education is higher in rural areas than in urban areas. 
+*Interpretation of ratio*: If the calculated ratio equals 1, access to higher education is equal in rural and urban areas. If the ratio is lower than 1, access to higher education is lower in rural areas than in urban areas. If the ratio is higher than 1, access to higher education is higher in rural areas than in urban areas. Furthermore, if the ratio does not equal 1 but approaches 1 over time, the gap in the access to higher education between the two areas decreases. Conversely, if the value between the ratio and 1 increases, this gap increases. 
 
-Furthermore, if the ratio increases from <1 to 1 over time, the proportion of first years in rural areas grows faster than the proportion of first years in urban areas. This thus indicates that the gap between the access to higher education decreases. similarly, if the ratio decreases from >1 to 1 over time, this gap decreases as well. 
-
-*Interpretation of rural/urban classification*: One important specification for the analysis is the classification of survey respondents as rural or urban citizens. For this reasons, three different methods of classifying respondents were used and compared in the analysis: 
+*Interpretation of rural/urban classification*: One important specification for the analysis is the classification of survey respondents as rural or urban citizens. As there are different possible methods of classification, three different methods of classifying respondents were used and compared in the analysis: 
 
 <div style="margin-bottom:50px;">
 </div>
@@ -103,7 +101,7 @@ Description <- c("The survey date reported by INEC.", "Age of the respondent.", 
 Class <- c("yearmon", "integer", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "integer", "factor")
 Levels <- c("sep 2019 = september 2019, etc.", "1 = 1 year old, 2 = 2 years old, etc.", "1 = indigenous, 2 = afroecuadorian, 3 = black, 4 = mulatto, 5 = montubio, 6 = mestizo, 7 = white, 8 = other", "1 = yes, 2 = no", "1 = urban, 2 = rural", "1 = urban, 2 = rural, 3 = abroad, 4 = none, 5 = code not found", "1 = urban, 2 = rural, 3 = abroad, 5 = code not found", "1 = work, 2 = salary increase, 3 = marriage, 4 = health, 5 = acquisition of property, 6 = family reunion, 7 = other", "1 = none, 2 = technical school, 3 = undergraduate, 4 = postgraduate", "1 = year 1, 2 = year 2, etc.", "1 = yes, 2 = no")
 Data <- cbind(ModuleNO, Name, QuestionID, Description, Class, Levels)
-knitr::kable(Data)
+knitr::kable(Data, format = "markdown")
 ```
 
 
