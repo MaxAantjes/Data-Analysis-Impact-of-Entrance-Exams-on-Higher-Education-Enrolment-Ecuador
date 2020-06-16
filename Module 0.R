@@ -8,6 +8,7 @@
 library(pacman)
 pacman::p_load(dplyr, haven)
 
+test <- read_sav("200712_EnemduBDD_15anios.sav")
 
 ## GOAL: create download and store file function.
 
@@ -119,7 +120,7 @@ all.data <- lapply(links, load.files)
 add.to.list <- function(element, list) {
         
         a <- length(list) + 1
-        list[a] <- element
+        list[[a]] <- element
         return(list)
 }
 
@@ -156,11 +157,75 @@ y2017sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/201
 
 y2015sep <- load.double.zip(y2015sep)
 y2017sep <- load.double.zip(y2017sep)
+
+## METHOD: Add loaded files to list.
+
 all.data.1 <- add.to.list(y2015sep, all.data)
 all.data.1 <- add.to.list(y2017sep, all.data.1) 
 
 
-## save data. 
+## GOAL: Load data frames in master zipfile document.
 
-saveRDS(all.data.1, "raw_data")
+## METHOD: download master zipfile document in termporary directory.
+
+url <- "https://educacion.gob.ec/wp-content/uploads/downloads/2017/06/BBDD_ENEMDU_Completas.zip" 
+td = tempdir()
+temp = tempfile(tmpdir=td, fileext=".zip")
+download.file(url,temp)
+unzip(temp, exdir=td, overwrite=TRUE)
+
+
+## METHOD: create function to extract files from subzipfiles.
+
+unzip.in.td <- function(x) {
+        
+        unzip(paste0(file.path(td), x[1]), exdir = td)
+        
+        dat <- data.frame(read_sav(file.path(td, x[2])))
+        dat <- mutate(dat, date = x[3])
+        names(dat)[[1]] <- "survey.location" 
+        
+        return(dat)
+        
+}
+
+
+## METHOD: create list to input in function.
+
+y2007 <- c("\\BBDD_ENEMDU_Completas\\bdd_enemdu_15anios_12_2007.zip", 
+           "\\bdd_enemdu_15anios_12_2007\\200712_EnemduBDD_15anios.sav",
+           "2007-12")
+y2008 <- c("\\BBDD_ENEMDU_Completas\\bdd_enemdu_15anios_12_2008.zip", 
+           "\\bdd_enemdu_15anios_12_2008\\200812_EnemduBDD_15anios.sav",
+           "2008-12")
+y2009 <- c("\\BBDD_ENEMDU_Completas\\bdd_enemdu_15anios_12_2009.zip", 
+           "\\bdd_enemdu_15anios_12_2009\\200912_EnemduBDD_15anios.sav",
+           "2009-12")
+y2010 <- c("\\BBDD_ENEMDU_Completas\\bdd_enemdu_15anios_12_2010.zip", 
+           "\\bdd_enemdu_15anios_12_2010\\201012_EnemduBDD_15anios.sav",
+           "2010-12")
+y2011 <- c("\\BBDD_ENEMDU_Completas\\bdd_enemdu_15anios_12_2011.zip", 
+           "\\bdd_enemdu_15anios_12_2011\\201112_EnemduBDD_15anios.sav",
+           "2011-12")
+y2012 <- c("\\BBDD_ENEMDU_Completas\\bdd_enemdu_15anios_12_2012.zip", 
+           "\\bdd_enemdu_15anios_12_2012\\201212_EnemduBDD_15anios.sav",
+           "2012-12")
+y2013 <- c("\\BBDD_ENEMDU_Completas\\bdd_enemdu_15anios_12_2012.zip", 
+           "\\bdd_enemdu_15anios_12_2012\\201212_EnemduBDD_15anios.sav",
+           "2012-12")
+
+## METHOD: Create a list of dataframes. 
+list <- list(y2007, y2008, y2009, y2010, y2011, y2012, y2013)
+all.data.2 <- lapply(list, unzip.in.td)
+
+## I won't merge the data sets as the file becomes too large to read.
+#unlink(temp)
+
+        
+
+## save data. 
+saveRDS(all.data.1, "raw_data_1")
+saveRDS(all.data.2, "raw_data_2")
+save
 rm(list = ls())
+
