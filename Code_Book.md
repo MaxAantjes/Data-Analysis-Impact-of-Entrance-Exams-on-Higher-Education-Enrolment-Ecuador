@@ -268,5 +268,3 @@ rural and urban access to education.
 </div>
 
 ![](Code_Book_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->![](Code_Book_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->![](Code_Book_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->
-
-\[placeholder\]
