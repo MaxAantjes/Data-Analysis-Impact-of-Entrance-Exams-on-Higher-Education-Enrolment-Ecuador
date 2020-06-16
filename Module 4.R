@@ -270,7 +270,7 @@ RNA.table[, 3:17] <- (RNA.table[, 3:17]/rowSums(RNA.table[, 3:17]))*100
 saveRDS(PA.table, "past.address.table")
 saveRDS(PB.table, "place.of.birth.table")
 saveRDS(CA.table, "current.address.table")
-saveRDS(RNA.table, "reasons.for.not.attending.he")
+saveRDS(RNA.table, "tidy_data_set_RNA.RDS")
 saveRDS(migration.table, "academic.migration")
 saveRDS()
 rm(list = ls())
