@@ -193,8 +193,10 @@ PA.table$numb.rural <- number.rural2[, 1]
 PA.table$total <- PA.table$urban+PA.table$rural
 PA.table$PA.prop.urban <- PA.table$urban/PA.table$numb.urban
 PA.table$PA.prop.rural <- PA.table$rural/PA.table$numb.rural
-PA.table$prop.total <- PA.table$total/(CA.table$numb.rural+PA.table$numb.urban)
-PA.table$PA.rural.urban.ratio <- (PA.table$PA.prop.rural/PA.table$PA.prop.urban)*100
+PA.table$prop.total <- PA.table$total/(CA.table$numb.rural+
+                                               PA.table$numb.urban)
+PA.table$PA.rural.urban.ratio <- (PA.table$PA.prop.rural/
+                                          PA.table$PA.prop.urban)*100
 
 
 ## ----------------------------------------------------------------##
@@ -222,15 +224,54 @@ number.rural3 <- data.frame(unlist(lapply(list1, nrow)))
 migration.table <- dcast(academic.migration, survey.date ~ identification)
 migration.table$numb.rural <- number.rural3[, 1]
 migration.table$numb.urban <- number.urban3[, 1]
-migration.table$prop.r.to.u.migration <- migration.table$rural.to.urban.migration/migration.table$numb.rural
-migration.table$prop.u.to.r.migration <- migration.table$urban.to.rural.migration/migration.table$numb.urban
-migration.table$ratio.r.over.u <- (migration.table$prop.r.to.u.migration/migration.table$prop.u.to.r.migration)*100
+migration.table$prop.r.to.u.migration <- 
+        migration.table$rural.to.urban.migration/
+        migration.table$numb.rural
+migration.table$prop.u.to.r.migration <- 
+        migration.table$urban.to.rural.migration/migration.table$numb.urban
+migration.table$ratio.r.over.u <- 
+        (migration.table$prop.r.to.u.migration/
+                 migration.table$prop.u.to.r.migration)*100
 
+
+
+## ----------------------------------------------------------------##
+
+## GOAL: Map the differenet reasons of not attending higher 
+## education for individuals from rural and urban areas.
+
+## METHOD: select all respondents who have not lived abroad who
+## are currently not matriculated in higher education and never have
+## been matriculated in education. 
+
+
+RNA.higher.edu <- dat0 %>%
+        filter(location.prior.address == "urban" | 
+                       location.prior.address == "rural" |
+                       location.prior.address == "none") %>%
+        filter(age %in% ages.of.interest) %>% 
+        filter(place.of.birth == "urban" | place.of.birth == "rural" |
+                       is.na(place.of.birth)) %>%
+        filter(!reason.not.matriculated == "completed") %>%
+        filter(higher.education.level == "none" &  
+                       currently.matriculated == "no") 
+
+## METHOD: Create a table listing the number of respondents for each 
+## reason per area (rural/urban) and survey date. 
+RNA.table <- dcast(no.higher.edu, survey.date + current.address ~ reason.not.matriculated)
+names(RNA.table) <- gsub(" ", ".", names(RNA.table))
+
+## METHOD: calculate for each reason the percentage of respondents who
+## selected it per area (rural/urban) and survey date.
+
+RNA.table[, 3:17] <- (RNA.table[, 3:17]/rowSums(RNA.table[, 3:17]))*100
 
 ## Save data.
-saveRDS(PA.table, "past.address.table.csv")
-saveRDS(PB.table, "place.of.birth.table.csv")
-saveRDS(CA.table, "current.address.table.csv")
-saveRDS(migration.table, "academic.migration.csv")
+saveRDS(PA.table, "past.address.table")
+saveRDS(PB.table, "place.of.birth.table")
+saveRDS(CA.table, "current.address.table")
+saveRDS(RNA.table, "reasons.for.not.attending.he")
+saveRDS(migration.table, "academic.migration")
+saveRDS()
 rm(list = ls())
 
