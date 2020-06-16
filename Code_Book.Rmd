@@ -148,10 +148,10 @@ Without having conducted statistical tests, the data seems to support both ha1 a
 library(pacman)
 pacman::p_load(ggplot2, zoo, dplyr)
 
-PA.table <- readRDS("past.address.table.csv")
-PB.table <- readRDS("place.of.birth.table.csv")
-CA.table <- readRDS("current.address.table.csv")
-migration.table <- readRDS("academic.migration.csv")
+PA.table <- readRDS("past.address.table")
+PB.table <- readRDS("place.of.birth.table")
+CA.table <- readRDS("current.address.table")
+migration.table <- readRDS("academic.migration")
 
 ## GOAL: Create plot comparing rural.urban.ratio for each method.
 
