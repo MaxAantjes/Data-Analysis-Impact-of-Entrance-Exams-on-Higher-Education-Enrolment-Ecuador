@@ -472,7 +472,7 @@ Step 3
 
 *3. Navigate to the ‘PERSONA’ level* ![*REDATAM Ecuador Data Guide Step
 4
-*](https://github.com/maxaantjes/Data-Analysis-Impact-of-Entrance-Exams-on-Higher-Education-Enrolment-Ecuador/Module-0---Data-Gathering_files/figure-gfm/REDATAM.4.PNG)
+*](https://github.com/maxaantjes/Data-Analysis-Impact-of-Entrance-Exams-on-Higher-Education-Enrolment-Ecuador/Module-0---Data-Gathering_files/REDATAM.4.PNG)
 
 By double clicking a variable in the list in the left bottom corner, you
 can now see the ‘labels’ in the screen on the right for each ‘code’ or
