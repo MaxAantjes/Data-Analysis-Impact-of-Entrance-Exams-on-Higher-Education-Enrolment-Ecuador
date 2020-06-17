@@ -461,18 +461,18 @@ Here is a short guide on how to do this:
 
 *1. Open RED7 Admin and click R+SP dictionary* ![*REDATAM Ecuador Data
 Guide Step 1
-*](https://github.com/maxaantjes/Data-Analysis-Impact-of-Entrance-Exams-on-Higher-Education-Enrolment-Ecuador/Module-0---Data-Gathering_files/figure-gfm/REDATAM.1.PNG?raw=true)
+*](https://github.com/maxaantjes/Data-Analysis-Impact-of-Entrance-Exams-on-Higher-Education-Enrolment-Ecuador/Module-0---Data-Gathering_files/figure-gfm/REDATAM.1.PNG)
 
 *2. Select the file ending in dpa* ![*REDATAM Ecuador Data Guide Step 2
-*](https://github.com/maxaantjes/Data-Analysis-Impact-of-Entrance-Exams-on-Higher-Education-Enrolment-Ecuador/Module-0---Data-Gathering_files/figure-gfm/REDATAM.2.PNG?raw=true)
+*](https://github.com/maxaantjes/Data-Analysis-Impact-of-Entrance-Exams-on-Higher-Education-Enrolment-Ecuador/Module-0---Data-Gathering_files/figure-gfm/REDATAM.2.PNG)
 
 *3. You should now see the following list* ![*REDATAM Ecuador Data Guide
 Step 3
-*](https://github.com/maxaantjes/Data-Analysis-Impact-of-Entrance-Exams-on-Higher-Education-Enrolment-Ecuador/Module-0---Data-Gathering_files/figure-gfm/REDATAM.3.PNG?raw=true)
+*](https://github.com/maxaantjes/Data-Analysis-Impact-of-Entrance-Exams-on-Higher-Education-Enrolment-Ecuador/Module-0---Data-Gathering_files/figure-gfm/REDATAM.3.PNG)
 
 *3. Navigate to the ‘PERSONA’ level* ![*REDATAM Ecuador Data Guide Step
 4
-*](https://github.com/maxaantjes/Data-Analysis-Impact-of-Entrance-Exams-on-Higher-Education-Enrolment-Ecuador/Module-0---Data-Gathering_files/figure-gfm/REDATAM.4.PNG?raw=true)
+*](https://github.com/maxaantjes/Data-Analysis-Impact-of-Entrance-Exams-on-Higher-Education-Enrolment-Ecuador/Module-0---Data-Gathering_files/figure-gfm/REDATAM.4.PNG)
 
 By double clicking a variable in the list in the left bottom corner, you
 can now see the ‘labels’ in the screen on the right for each ‘code’ or
