@@ -3,14 +3,16 @@
 
 ## Unfortunately, there is NO consistency in the data folders provided 
 ## by the Ecuadorian government. As such, filepaths for every individual
-## download need to be specified. 
+## download need to be specified. More information on the methods used
+## can be found in the module_0_Data_Gathering.md document. 
 
 library(pacman)
 pacman::p_load(dplyr, haven)
 
-test <- read_sav("200712_EnemduBDD_15anios.sav")
 
-## GOAL: create download and store file function.
+## GOAL: download all data from September 2014 to September 2019 (excluding two data sets). 
+
+## METHOD: create download and store file function.
 
 load.files <- function(x) {
         
@@ -43,7 +45,7 @@ load.files <- function(x) {
 }
    
 
-## GOAL: create list of links to files, filepaths and dates per 
+## METHOD: create list of links to files, filepaths and dates per 
 ## dataframe. 
 
 y2019sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2019/Septiembre/BDD_DATOS_ABIERTOS_ENEMDU_%202019_09_CSV.zip",
@@ -109,21 +111,15 @@ links <- list(y2019sep, y2019jun, y2019mar, y2018dec, y2018sep, y2018jun, y2018m
               y2017dec, y2017jun, y2017mar, y2016dec, y2016sep, y2016jun, y2016mar,
               y2015dec, y2015jun, y2015mar, y2014dec, y2014sep)
 
-
-## Create a list of dataframes. 
+## METHOD: run load.files function on list. 
 
 all.data <- lapply(links, load.files)
 
 
-## Load two dataframes with zipfiles within zipfiles.
+## GOAL: add two dataframes from September 2015 and September 2019
+## which have zipfiles within zipfiles.
 
-add.to.list <- function(element, list) {
-        
-        a <- length(list) + 1
-        list[[a]] <- element
-        return(list)
-}
-
+## METHOD: create a function which loads zipfiles within zipfiles
 
 load.double.zip <- function(x) {
         
@@ -143,6 +139,9 @@ load.double.zip <- function(x) {
         
 }
 
+## METHOD: create vectors with the information required for the 
+## function. 
+
 
 y2015sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/2015/Septiembre-2015/201509_EnemduBDD_CSV.zip",
               "\\201509_EnemduBDD_CSV.zip",
@@ -155,16 +154,29 @@ y2017sep <- c("https://www.ecuadorencifras.gob.ec/documentos/web-inec/EMPLEO/201
               "2017-09")
 
 
+## METHOD: run double.zip function on the vectors.
+
 y2015sep <- load.double.zip(y2015sep)
 y2017sep <- load.double.zip(y2017sep)
 
-## METHOD: Add loaded files to list.
+
+## METHOD: create function to add dataframes to the list. 
+
+add.to.list <- function(element, list) {
+        
+        a <- length(list) + 1
+        list[[a]] <- element
+        return(list)
+}
+
+## METHOD: run function on dataframes. 
 
 all.data.1 <- add.to.list(y2015sep, all.data)
 all.data.1 <- add.to.list(y2017sep, all.data.1) 
 
 
-## GOAL: Load data frames in master zipfile document.
+## GOAL: Load data frames from December 2007 to December 2014, which 
+## are stored in a master zipfile document.
 
 ## METHOD: download master zipfile document in termporary directory.
 
@@ -173,7 +185,6 @@ td = tempdir()
 temp = tempfile(tmpdir=td, fileext=".zip")
 download.file(url,temp)
 unzip(temp, exdir=td, overwrite=TRUE)
-
 
 ## METHOD: create function to extract files from subzipfiles.
 
@@ -188,7 +199,6 @@ unzip.in.td <- function(x) {
         return(dat)
         
 }
-
 
 ## METHOD: create list to input in function.
 
@@ -211,21 +221,20 @@ y2012 <- c("\\BBDD_ENEMDU_Completas\\bdd_enemdu_15anios_12_2012.zip",
            "\\bdd_enemdu_15anios_12_2012\\201212_EnemduBDD_15anios.sav",
            "2012-12")
 y2013 <- c("\\BBDD_ENEMDU_Completas\\bdd_enemdu_15anios_12_2013.zip", 
-           "\\bdd_enemdu_15anios_12_2012\\201212_EnemduBDD_15anios.sav",
+           "\\bdd_enemdu_15anios_12_2013\\201312_EnemduBDD_15anios.sav",
            "2013-12")
 
 ## METHOD: Create a list of dataframes. 
 list <- list(y2007, y2008, y2009, y2010, y2011, y2012, y2013)
 all.data.2 <- lapply(list, unzip.in.td)
+unlink(temp)
 
-## I won't merge the data sets as the file becomes too large to read.
-#unlink(temp)
 
+## GOAL: Merge all data sets into one list:
+dat0 <- c(all.data.1, all.data.2)
         
 
-## save data. 
-saveRDS(all.data.1, "raw_data_1")
-saveRDS(all.data.2, "raw_data_2")
-save
+## GOAL: save data. 
+saveRDS(dat0, "raw_data.RDS")
 rm(list = ls())
 
