@@ -1,12 +1,15 @@
-## This module generates a list of rural and urban postal codes.  
+## This module generates a dataframe classifying each postcode
+## in terms of rural/urban and coast/highlands. 
 
 
-## Load packages and data.Download list of postal codes and
-## ural/ urban divide in Ecuador. 
+## GOAL: load packages.
 
 library(pacman)
 pacman::p_load(pdftools)
 pacman::p_load(stringr)
+
+
+## GOAL: download data. 
 
 td = tempdir()
 temp = tempfile(tmpdir=td, fileext=".pdf")
@@ -14,7 +17,17 @@ download.file("https://aplicaciones2.ecuadorencifras.gob.ec/SIN/descargas/cge201
 pdf0 <- pdf_text(temp)
 unlink(temp)
 
-## Load useful function. 
+
+## ----------------------------------------------------------------##
+## GOAL: prepare loaded character string for extraction. 
+
+pdf0 <- tolower(paste(pdf0, collapse =""))
+pdf0 <- gsub(" ", "", pdf0)
+
+
+## GOAL: Create data frame of postal codes and urban/rural division. 
+
+## METHOD: Load useful function to change text according to pattern. 
 
 change_name <- function(x, original, new) {
         
@@ -27,43 +40,74 @@ change_name <- function(x, original, new) {
         return(x)
 }
 
+## METHOD: Change text according to pattern in order to demark
+## the beginning and end of rural code lists. 
 
-## Create a list containing rural postal codes.
-
-pdf1 <- tolower(paste(pdf0, collapse =""))
-
-original <- c(" ", "rural", "cantón", "zonasenestudio", "zonam")
-new <- c("", "splitsplitstartrural", "endruralsplitsplit",
+original <- c("rural", "cantón", "zonasenestudio", "zonam")
+new <- c("splitsplitstartrural", "endruralsplitsplit",
          "endruralsplitsplit", "endruralsplitsplit")
-pdf1 <- change_name(pdf1, original,new)
+pdf1 <- change_name(pdf0, original,new)
+
+## METHOD: Create a list of the list numbers of the elements
+## containing chunks of text with rural postal codes.
 
 pdf1 <- str_split(pdf1, "splitsplit")
 rural.list <- unlist(lapply(pdf1, grep, pattern = 
                               "startrural(.*)endrural"))
 
+## METHOD: Separate the list into a list with urban postcodes
+## and a list with rural postcodes. 
 rural.text <- pdf1[[1]][rural.list]
-
-
-## Create a list containing urban postal codes
 urban.text <- pdf1[[1]][-rural.list]
 
-
-## Extract rural and urban postal codes from list.
+## METHOD: Extract the codes from each list and store them 
+## into a dataframe. 1 indicates urban. 2 indicates rural. 
 rural.codes <- data.frame(unique(unlist(str_extract_all(rural.text, 
                                "[0-9][0-9][0-9][0-9][0-9][0-9]"))))
 urban.codes <- data.frame(unique(unlist(str_extract_all(urban.text, 
                                 "[0-9][0-9][0-9][0-9][0-9][0-9]"))))
 
 names(rural.codes) <- "codes"
-rural.codes <- mutate(rural.codes, area = "rural")
+rural.codes <- mutate(rural.codes, area = 2)
 names(urban.codes) <- "codes"
-urban.codes <- mutate(urban.codes, area = "urban")
-code.list <- rbind(rural.codes, urban.codes)
+urban.codes <- mutate(urban.codes, area = 1)
+dat1 <- rbind(rural.codes, urban.codes)
+remove(new, original, rural.list, pdf1, rural.text, urban.text, rural.codes, urban.codes)
 
 
-## Create dataframe of codes 
+## ----------------------------------------------------------------##
+## GOAL: Add a variable for each postal codes and coastal/ highlands division.
 
-saveRDS(code.list, file = "codes.csv")
+## METHOD: Create a vector of the codes of coastal provinces based on 
+## https://es.wikipedia.org/wiki/Regi%C3%B3n_Costa#Divisi%C3%B3n_pol%C3%ADtica
+
+prov.codes <- unlist(str_extract_all(pdf0, "[0-9][0-9]provincia\\s*(.*)\\s*comprende"))
+coast.names <- list("eloro", "esmeraldas", "guayas", "losríos", "manabí", "santaelena",
+                  "santodomingodelostsáchilas")
+coast.codes <- sapply(coast.names, grep, x = prov.codes, value = TRUE)
+coast.codes <- unlist(str_extract_all(coast.codes, "[0-9][0-9]"))
+
+## METHOD: Create region variable which indicates coastal/ highlands
+## identification for each postcode. At this stage we will filter out
+## codes starting with 90, as these are (according to the pdf file, p. 49)
+## under observation and unclassified. The reason for this seems to stem
+## from a variety of political deciosions. (https://en.wikipedia.org/wiki/Provinces_of_Ecuador).
+## 1 indicates highlands. 2 indicates coast. 
+
+dat2 <- dat1 %>%
+        mutate(region = str_extract_all(dat1$codes, "^[0-9][0-9]")) %>%
+        filter(!region == "90") %>%
+        mutate(region = ifelse(region %in% coast.codes, 
+                                         2, 1))
+remove(dat1, prov.codes, coast.names, coast.codes)
+
+
+## GOAL: return codes as numeric vector
+dat2$codes <- as.integer(dat2$codes)
+
+## GOAL: Save data. 
+
+saveRDS(dat2, file = "postcodes.rds")
 rm(list = ls())
 
 
