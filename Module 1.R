@@ -55,7 +55,7 @@ dat1 <- lapply(dat0, addcolNA, pattern = "ciudad")
 
 dat1 <- lapply(dat1, select, survey.location, ciudad, p03, p15,  
                p16a, p16b, p17a, p17b, p10a, p10b, p07, p12a,  
-               date, p09, p18, p02)
+               date, p09, p02)
 
 dat2 <- do.call(rbind, dat1)
 remove(dat0)
@@ -68,7 +68,7 @@ names(dat2) <- c("current.address.area", "current.address.postcode", "age",
                  "prior.address.abroad", "prior.address.postcode", 
                  "higher.education.level", "no.years.completed", 
                  "currently.matriculated","obtained.degree", "survey.date", 
-                 "reason.not.matriculated", "reason.for.migration", "gender")
+                 "reason.not.matriculated", "gender")
 
 
 ## GOAL: Specify variable class and levels for R. 
@@ -116,12 +116,6 @@ dat2$reason.not.matriculated <- factor(dat2$reason.not.matriculated, levels = 1:
                                                   "lack of places at educational facilities",
                                                   "other", "other", "other"))
 
-dat2$reason.for.migration <- factor(dat2$reason.for.migration, levels = 1:8,
-                                    labels = c("work", "increase salary",
-                                               "marriage", "academic",
-                                               "health", "property purchase",
-                                               "family reunion", "other"))
-
 dat2$gender <- factor(dat2$gender, levels = c(1,2), labels = c("male", "female"))
 
 ## METHOD: Transform survey date into a time variable. 
@@ -142,8 +136,7 @@ remove(dat1)
 a <- dat2 %>%
         filter(ever.moved == "no") %>%
         mutate(time.at.current.address = age) %>%
-        mutate(prior.address.postcode = current.address.postcode) %>%
-        mutate(reason.for.migration = "none")
+        mutate(prior.address.postcode = current.address.postcode) 
 
 b <- dat2 %>%
         filter(ever.moved == "yes" | is.na(ever.moved))
@@ -174,13 +167,53 @@ dat3$obtained.degree[dat3$higher.education.level == "none"] <- "no"
 remove(a)
 remove(b)
 
+
+remove(dat2)
+
+
 ## ----------------------------------------------------------------##
-## GOAL: Create new indicating the area of prior address and the 
-## region of current and prior address.
+## GOAL: Create variables indicating information about the respondent during
+## the estimated period he/she was attending the final year of highschool, 
+## including postcode and date. 
+
+## METHOD: Create a variable with the date and year the respondent was 18. 
+## Remove respondents who are not estimated to have been final year 
+## highschoolers between 2007 and 2020 (as there is no data outside of this
+## range of our variables of interest. 
+
+dat4 <- dat3 %>%
+        filter(age > 17) %>%
+        mutate(estimated.final.highschool.year = survey.date - (age-18))
+
+lowerlim <- as.yearmon("2007-01")
+upperlim <- as.yearmon("2020-01")
+
+dat4 <- dat4[dat4$estimated.final.highschool.year > lowerlim & 
+                     dat4$estimated.final.highschool.year < upperlim, ]
+
+
+## METHOD: Determine the location of respondents during their
+## estimated final school year. Remove current.address and 
+## prior.address variables as they are no longer of interest
+
+dat4 <- dat4 %>%
+        mutate(postcode.estimated.final.highschool.year =
+                       ifelse(ever.moved == "no" | ever.moved == "yes"
+                              & time.at.current.address > 
+                                      (age - (difftime(survey.date, 
+                                                               estimated.final.highschool.year,
+                                                       unit = "weeks"))/52.25), 
+                              current.address.postcode, prior.address.postcode)) %>%
+        select(-c(current.address.postcode, current.address.area,
+                  prior.address.postcode, prior.address.abroad, ever.moved))
+
+
+## ----------------------------------------------------------------##
+## GOAL: Create new variable indicating the area and the region of the postcodes.
 
 ## METHOD: Create a function indicating the area of the postcode
 ## relying on the postcode dataframe created in module 1.
-## This function will return NA values for individuals who live abroad.
+## This function will return NA values for individuals who lived abroad.
 ## This makes sense, because we cannot determine whether these 
 ## individuals have migrated from urban or rural areas. 
 
@@ -204,20 +237,16 @@ area <- function(x, y = postcodes) {
         return(c)
 }
 
-## METHOD: run function on dataframe to create the 
-## prior.address.area variable. 
+## METHOD: run function on dataframe to create area variable indicating area. 
 
-dat3$prior.address.area <- lapply(dat3$prior.address.postcode, 
-                                 area)
-dat3$prior.address.area <- factor(dat3$prior.address.area, 
+dat4$area.estimated.final.highschool.year <- 
+        factor(lapply(dat4$postcode.estimated.final.highschool.year, area),
                                   levels = c(1,2),
                                   labels = c("urban", "rural"))
 
 ## METHOD: Create a similar function indicating the region of the postcode
 ## relying on the postcode dataframe created in module 1.
-## This function will return NA values for individuals who live abroad.
-## This makes sense, because we cannot determine whether these 
-## individuals have migrated from urban or rural areas. 
+## This function will also return NA values for individuals who lived abroad.
 
 region <- function(x, y = postcodes) {
         
@@ -239,66 +268,80 @@ region <- function(x, y = postcodes) {
         return(c)
 }
 
-## METHOD: run function on dataframe to create the 
-## current.address.region variable. 
+## METHOD: run function on dataframe to create area variable indicating region. 
 
-dat3$current.address.region <- lapply(dat3$current.address.postcode, 
-                                  region)
-dat3$current.address.region <- factor(dat3$current.address.region, 
-                                  levels = 1:2,
-                                  labels = c("highlands", "coast"))
-
-## METHOD: run function on dataframe to create the 
-## prior.address.region variable. 
-
-dat3$prior.address.region <- lapply(dat3$prior.address.postcode, 
-                                      region)
-dat3$prior.address.region <- factor(dat3$prior.address.region, 
-                                      levels = 1:2,
-                                      labels = c("highlands", "coast"))
-
-remove(dat2)
-
-dat4 <- dat3 %>%
-        mutate(estimated.final.highschool.year = survey.date - (age-18))
-
-b <- interval(as.Date("2016-09-30"), as.Date("2017-09-30"))
-c <- interval(as.Date("2017-09-30"), as.Date("2018-09-30"))
-a <- as.Date("2013-12-30")
-a %within% b
-
-y <- c(c,b)
-
-## Create sequence
-seq(from = as.Date("1995-09-09"), to = as.Date("2017-09-09"), by = "years")
-
-## Combine sequences in interval
-coast.int.start <- seq(from = as.Date("2007-05-01"), to = as.Date("2019-05-01"), by = "years")
-coast.int.end <- seq(from = as.Date("2008-04-30"), to = as.Date("2020-04-30"), by = "years")
-
-## Function (create intervals)
+dat4$region.estimated.final.highschool.year <- 
+        factor(lapply(dat4$postcode.estimated.final.highschool.year, area),
+               levels = c(1,2),
+               labels = c("highlands", "coast"))
 
 
-## Function
+## ----------------------------------------------------------------##
+## GOAL: Transform the estimated date respondents were attending their
+## final year in highschool into an interval variable indicating the
+## academic year. 
+
+## METHOD: Create sequences of the start and end of schoolyears in coastal
+## and urban areas (they differ between regions in Ecuador). 
+
+coast.int.start <- seq(from = as.Date("2007-05-01"), 
+                       to = as.Date("2019-05-01"), by = "years")
+
+coast.int.end <- seq(from = as.Date("2008-04-30"), 
+                     to = as.Date("2020-04-30"), by = "years")
+
+hland.int.start <- seq(from = as.Date("2007-09-01"),
+                       to = as.Date("2019-09-01"), by = "years")
+
+hland.int.end <- seq(from = as.Date("2008-08-31"), 
+                     to = as.Date("2020-08-31"), by = "years")
+
+## METHOD: Create a function which turns two vectors of start and end dates 
+## into intervals. 
+
+intcreate <- function(x, y) {
+        
+        a <- c(interval())
+        
+        for(i in 1:length(x)) {
+                
+                a[i] <- interval(as.Date(x[i]),as.Date(y[i]))
+                
+        }
+        
+        return(a)
+        
+}
+
+## METHOD: Run vectors through function to create a list of intervals. 
+
+coast.int <- intcreate(coast.int.start, coast.int.end)
+hland.int <- intcreate(hland.int.start, hland.int.end)
+remove(coast.int.start, coast.int.end, hland.int.end, hland.int.start)
+
+## METHOD: Create function which replaces dates and years
+## with the interval they belong in. 
+
 intreplace <- function(x, y) {
         
         i <- 1
         
         while(!(x %within% y[i])) {
-               
+                
                 i <- i+1
                 
-        if(is.na(y[i])) {
-                
-                break
-        }
+                if(is.na(y[i])) {
+                        
+                        break
                 }
-    
+        }
+        
         x <- y[i] 
         return(x)
+        
 }
 
-d <- intreplace(a, y)
+
 
 
 ## ----------------------------------------------------------------##
