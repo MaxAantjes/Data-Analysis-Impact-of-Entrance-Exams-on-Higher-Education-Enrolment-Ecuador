@@ -4,9 +4,10 @@
 ## Load packages and data set. 
 
 library(pacman)
-pacman::p_load(dplyr, zoo, lubridate)
+pacman::p_load(dplyr, lubridate)
 
 dat0 <- readRDS("raw_data.rds")
+dat10 <- readRDS("tidy_data_studteachratio.rds")
 postcodes <- readRDS("postcodes.rds")
 
 
@@ -120,7 +121,7 @@ dat2$gender <- factor(dat2$gender, levels = c(1,2), labels = c("male", "female")
 
 ## METHOD: Transform survey date into a time variable. 
 
-dat2 <- transform(dat2, survey.date = as.yearmon(survey.date))
+dat2 <- transform(dat2, survey.date = as.Date(survey.date))
 remove(dat1)
 
 ## ----------------------------------------------------------------##
@@ -167,7 +168,6 @@ dat3$obtained.degree[dat3$higher.education.level == "none"] <- "no"
 remove(a)
 remove(b)
 
-
 remove(dat2)
 
 
@@ -176,20 +176,11 @@ remove(dat2)
 ## the estimated period he/she was attending the final year of highschool, 
 ## including postcode and date. 
 
-## METHOD: Create a variable with the date and year the respondent was 18. 
-## Remove respondents who are not estimated to have been final year 
-## highschoolers between 2007 and 2020 (as there is no data outside of this
-## range of our variables of interest. 
+## METHOD: Create a variable with the date and year the respondent was 18.
 
 dat4 <- dat3 %>%
-        filter(age > 17) %>%
-        mutate(estimated.final.highschool.year = survey.date - (age-18))
-
-lowerlim <- as.yearmon("2007-01")
-upperlim <- as.yearmon("2020-01")
-
-dat4 <- dat4[dat4$estimated.final.highschool.year > lowerlim & 
-                     dat4$estimated.final.highschool.year < upperlim, ]
+        filter(age > 17 & age < 22) %>%
+        mutate(estimated.final.highschool.year = (survey.date - (age-18) * 365.2422))
 
 
 ## METHOD: Determine the location of respondents during their
@@ -271,76 +262,89 @@ region <- function(x, y = postcodes) {
 ## METHOD: run function on dataframe to create area variable indicating region. 
 
 dat4$region.estimated.final.highschool.year <- 
-        factor(lapply(dat4$postcode.estimated.final.highschool.year, area),
+        factor(lapply(dat4$postcode.estimated.final.highschool.year, region),
                levels = c(1,2),
                labels = c("highlands", "coast"))
-
 
 ## ----------------------------------------------------------------##
 ## GOAL: Transform the estimated date respondents were attending their
 ## final year in highschool into an interval variable indicating the
 ## academic year. 
 
-## METHOD: Create sequences of the start and end of schoolyears in coastal
-## and urban areas (they differ between regions in Ecuador). 
+## METHOD: Create function which replaces as.Date variable with schoolyear at
+## the coast. As schoolyears start in May, all dates before the 5th month indicate
+## prior year-current year should be used. Otherwise current year - next 
+## year should be used. 
 
-coast.int.start <- seq(from = as.Date("2007-05-01"), 
-                       to = as.Date("2019-05-01"), by = "years")
-
-coast.int.end <- seq(from = as.Date("2008-04-30"), 
-                     to = as.Date("2020-04-30"), by = "years")
-
-hland.int.start <- seq(from = as.Date("2007-09-01"),
-                       to = as.Date("2019-09-01"), by = "years")
-
-hland.int.end <- seq(from = as.Date("2008-08-31"), 
-                     to = as.Date("2020-08-31"), by = "years")
-
-## METHOD: Create a function which turns two vectors of start and end dates 
-## into intervals. 
-
-intcreate <- function(x, y) {
+schyearcoast <- function(x) {
         
-        a <- c(interval())
+        a <- year(x)
         
-        for(i in 1:length(x)) {
+        if(month(x) < 5) {
                 
-                a[i] <- interval(as.Date(x[i]),as.Date(y[i]))
-                
-        }
-        
-        return(a)
-        
-}
-
-## METHOD: Run vectors through function to create a list of intervals. 
-
-coast.int <- intcreate(coast.int.start, coast.int.end)
-hland.int <- intcreate(hland.int.start, hland.int.end)
-remove(coast.int.start, coast.int.end, hland.int.end, hland.int.start)
-
-## METHOD: Create function which replaces dates and years
-## with the interval they belong in. 
-
-intreplace <- function(x, y) {
-        
-        i <- 1
-        
-        while(!(x %within% y[i])) {
-                
-                i <- i+1
-                
-                if(is.na(y[i])) {
+                x <- paste0(as.character(a-1), "-", as.character(a)) } else {
                         
-                        break
+                        x <- paste0(as.character(a), "-", as.character(a+1))
                 }
-        }
         
-        x <- y[i] 
         return(x)
         
 }
 
+## METHOD: Create function which replaces as.Date variable with schoolyear at
+## the highlands. As schoolyears start in May, all dates before the 9th month indicate
+## prior year-current year should be used. Otherwise current year - next 
+## year should be used. 
+
+
+schyearhlands <- function(x) {
+        
+        a <- year(x)
+        
+        if(month(x) < 9) {
+                
+                x <- paste0(as.character(a-1), "-", as.character(a)) } else {
+                        
+                        x <- paste0(as.character(a), "-", as.character(a+1))
+                }
+        
+        return(x)
+        
+}
+
+## METHOD: Run functions on split data sets (coast and highlands). Remove
+## any respondents with final higschoolyears earlier than year 2008-2009. Remove 
+## any respondents with final later than 2017-2018 (as there are no respondents for 
+## each year in the age group for later years).
+
+dat4A <- dat4 %>%
+        filter(region.estimated.final.highschool.year == "highlands") %>%
+        filter(as.Date(estimated.final.highschool.year) > as.Date("2009-04-31")) 
+
+
+
+& 
+                       (estimated.final.highschool.year < as.Date("2017-05-01",
+                                                                format = "%Y-%m-%d")))
+
+dat4A$estimated.final.highschool.year <- 
+        lapply(dat4A$estimated.final.highschool.year, schyearhlands)
+
+dat4B <- dat4 %>%
+        filter(region.estimated.final.highschool.year == "coast") %>%
+        filter(estimaged.final.highschool.year > as.Date("2009-08-31") & 
+                       estimated.final.higschool.year < as.Date("2017-09-01",
+                                                                format = "%Y-%m-%d"))
+
+dat4B$estimated.final.highschool.year <- 
+        lapply(dat4B$estimated.final.highschool.year, schyearcoast)
+
+dat4 <- rbind(dat4A, dat4B)
+dat4$estimated.final.highschool.year <- factor(unlist(dat4$estimated.final.highschool.year))
+
+
+## ----------------------------------------------------------------##
+## GOAL: Assign 
 
 
 
