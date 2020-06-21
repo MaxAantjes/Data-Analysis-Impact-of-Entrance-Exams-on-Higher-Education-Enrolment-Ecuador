@@ -1,15 +1,14 @@
 ## This module generates a dataframe classifying each postcode
 ## in terms of rural/urban and coast/highlands. 
 
-
-## GOAL: load packages.
-
+## ----------------------------------------------------------------##
+## GOAL: load packages. 
 library(pacman)
-pacman::p_load(pdftools)
-pacman::p_load(stringr)
+pacman::p_load(pdftools,stringr)
 
 
-## GOAL: download data. 
+## ----------------------------------------------------------------##
+## GOAL: download raw data.  
 
 td = tempdir()
 temp = tempfile(tmpdir=td, fileext=".pdf")
@@ -25,6 +24,7 @@ pdf0 <- tolower(paste(pdf0, collapse =""))
 pdf0 <- gsub(" ", "", pdf0)
 
 
+## ----------------------------------------------------------------##
 ## GOAL: Create data frame of postal codes and urban/rural division. 
 
 ## METHOD: Load useful function to change text according to pattern. 
@@ -67,9 +67,9 @@ rural.codes <- data.frame(unique(unlist(str_extract_all(rural.text,
 urban.codes <- data.frame(unique(unlist(str_extract_all(urban.text, 
                                 "[0-9][0-9][0-9][0-9][0-9][0-9]"))))
 
-names(rural.codes) <- "codes"
+names(rural.codes) <- "postcodes"
 rural.codes <- mutate(rural.codes, area = 2)
-names(urban.codes) <- "codes"
+names(urban.codes) <- "postcodes"
 urban.codes <- mutate(urban.codes, area = 1)
 dat1 <- rbind(rural.codes, urban.codes)
 remove(new, original, rural.list, pdf1, rural.text, urban.text, rural.codes, urban.codes)
@@ -95,24 +95,19 @@ coast.codes <- unlist(str_extract_all(coast.codes, "[0-9][0-9]"))
 ## 1 indicates highlands. 2 indicates coast. 
 
 dat2 <- dat1 %>%
-        mutate(region = str_extract_all(dat1$codes, "^[0-9][0-9]")) %>%
+        mutate(region = str_extract_all(dat1$postcodes, "^[0-9][0-9]")) %>%
         filter(!region == "90") %>%
         mutate(region = ifelse(region %in% coast.codes, 
                                          2, 1))
 remove(dat1, prov.codes, coast.names, coast.codes)
 
 
+## ----------------------------------------------------------------##
 ## GOAL: return codes as numeric vector
-dat2$codes <- as.integer(dat2$codes)
+dat2$postcodes <- as.integer(dat2$postcodes)
 
+
+## ----------------------------------------------------------------##
 ## GOAL: Save data. 
-
-saveRDS(dat2, file = "postcodes.rds")
+saveRDS(dat2, file = "clean_data_area_region.rds")
 rm(list = ls())
-
-
-
-
-
-
-
