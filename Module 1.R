@@ -7,8 +7,8 @@ library(pacman)
 pacman::p_load(dplyr, lubridate)
 
 dat0 <- readRDS("raw_data.rds")
-dat10 <- readRDS("tidy_data_studteachratio.rds")
-postcodes <- readRDS("postcodes.rds")
+df1 <- readRDS("tidy_data_studteachratio.rds")
+df2 <- readRDS("tidy_data_regionarea.rds")
 
 
 ## ----------------------------------------------------------------##
@@ -23,7 +23,7 @@ namestolower <- function(x) {
         names(x) <- tolower(names(x))
         
         return(x)
-                        
+        
 }
 
 dat0 <- lapply(dat0, namestolower)
@@ -77,26 +77,26 @@ names(dat2) <- c("current.address.area", "current.address.postcode", "age",
 ## METHOD: Specify factor variables according to surveys and codebook. 
 
 dat2$current.address.area <- factor(dat2$current.address.area, level = c(1,2),
-                               labels = c("urban", "rural"))
+                                    labels = c("urban", "rural"))
 
 dat2$higher.education.level <- factor(dat2$higher.education.level, 
                                       levels = 1:10, labels = 
-                                         c("none", "none", "none", "none",
-                                           "none", "none", "none", 
-                                           "technical.school",
-                                           "undergraduate", "postgraduate"))
+                                              c("none", "none", "none", "none",
+                                                "none", "none", "none", 
+                                                "technical.school",
+                                                "undergraduate", "postgraduate"))
 
 dat2$obtained.degree <- factor(dat2$obtained.degree, levels = c(1,2), labels =
                                        c("yes", "no"))
 
 dat2$ever.moved <- factor(dat2$ever.moved, levels = c(2,1),
-                                    labels = c("yes", "no"))
+                          labels = c("yes", "no"))
 
 dat2$prior.address.abroad <- factor(dat2$prior.address.abroad, levels = 
-                                         c(1,2), labels = c("no","yes"))
+                                            c(1,2), labels = c("no","yes"))
 dat2$ethnicity <- factor(dat2$ethnicity, levels = 1:8, labels = c("indigenous",
-                                "afroecuadorian", "black", "mulatto",
-                                "montubio", "mestizo", "white", "other"))
+                                                                  "afroecuadorian", "black", "mulatto",
+                                                                  "montubio", "mestizo", "white", "other"))
 
 dat2$currently.matriculated <- factor(dat2$currently.matriculated, levels =
                                               c(1,2), labels = c("yes", "no"))
@@ -192,79 +192,21 @@ dat4 <- dat4 %>%
                        ifelse(ever.moved == "no" | ever.moved == "yes"
                               & time.at.current.address > 
                                       (age - (difftime(survey.date, 
-                                                               estimated.final.highschool.year,
+                                                       estimated.final.highschool.year,
                                                        unit = "weeks"))/52.25), 
                               current.address.postcode, prior.address.postcode)) %>%
         select(-c(current.address.postcode, current.address.area,
-                  prior.address.postcode, prior.address.abroad, ever.moved))
+                  prior.address.postcode, prior.address.abroad, ever.moved,
+                  time.at.current.address))
 
 
 ## ----------------------------------------------------------------##
 ## GOAL: Create new variable indicating the area and the region of the postcodes.
 
-## METHOD: Create a function indicating the area of the postcode
-## relying on the postcode dataframe created in module 1.
-## This function will return NA values for individuals who lived abroad.
-## This makes sense, because we cannot determine whether these 
-## individuals have migrated from urban or rural areas. 
+## METHOD: Merge postcode and dat4. 
 
-area <- function(x, y = postcodes) {
-        
-        if (is.na(x) == TRUE) {
-                
-                c <- NA
-                
-        } else {
-                
-                c <-  y$area[y$codes == x]
-                
-                if(identical(c, character(0))) {
-                        
-                        c <- NA
-                }
-                
-        }
-        
-        return(c)
-}
+dat4 <- merge(dat4, postcodes, by.x = "postcode.estimated.final.highschool.year", by.y = "postcodes")
 
-## METHOD: run function on dataframe to create area variable indicating area. 
-
-dat4$area.estimated.final.highschool.year <- 
-        factor(lapply(dat4$postcode.estimated.final.highschool.year, area),
-                                  levels = c(1,2),
-                                  labels = c("urban", "rural"))
-
-## METHOD: Create a similar function indicating the region of the postcode
-## relying on the postcode dataframe created in module 1.
-## This function will also return NA values for individuals who lived abroad.
-
-region <- function(x, y = postcodes) {
-        
-        if (is.na(x) == TRUE) {
-                
-                c <- NA
-                
-        } else {
-                
-                c <-  y$region[y$codes == x]
-                
-                if(identical(c, character(0))) {
-                        
-                        c <- NA
-                }
-                
-        }
-        
-        return(c)
-}
-
-## METHOD: run function on dataframe to create area variable indicating region. 
-
-dat4$region.estimated.final.highschool.year <- 
-        factor(lapply(dat4$postcode.estimated.final.highschool.year, region),
-               levels = c(1,2),
-               labels = c("highlands", "coast"))
 
 ## ----------------------------------------------------------------##
 ## GOAL: Transform the estimated date respondents were attending their
@@ -318,33 +260,34 @@ schyearhlands <- function(x) {
 ## each year in the age group for later years).
 
 dat4A <- dat4 %>%
-        filter(region.estimated.final.highschool.year == "highlands") %>%
-        filter(as.Date(estimated.final.highschool.year) > as.Date("2009-04-31")) 
-
-
-
-& 
-                       (estimated.final.highschool.year < as.Date("2017-05-01",
-                                                                format = "%Y-%m-%d")))
+        filter(region == 2) %>%
+        filter(estimated.final.highschool.year > "2009-04-30" & 
+                       estimated.final.highschool.year < "2017-05-01")
 
 dat4A$estimated.final.highschool.year <- 
-        lapply(dat4A$estimated.final.highschool.year, schyearhlands)
+        lapply(dat4A$estimated.final.highschool.year, schyearcoast)
+
 
 dat4B <- dat4 %>%
-        filter(region.estimated.final.highschool.year == "coast") %>%
-        filter(estimaged.final.highschool.year > as.Date("2009-08-31") & 
-                       estimated.final.higschool.year < as.Date("2017-09-01",
-                                                                format = "%Y-%m-%d"))
+        filter(region == 1) %>%
+        filter(estimated.final.highschool.year > as.Date("2009-08-31") & 
+                       estimated.final.highschool.year < as.Date("2017-09-01"))
 
 dat4B$estimated.final.highschool.year <- 
-        lapply(dat4B$estimated.final.highschool.year, schyearcoast)
+        lapply(dat4B$estimated.final.highschool.year, schyearhlands)
 
-dat4 <- rbind(dat4A, dat4B)
-dat4$estimated.final.highschool.year <- factor(unlist(dat4$estimated.final.highschool.year))
 
+dat5 <- rbind(dat4A, dat4B)
+dat5$estimated.final.highschool.year <- factor(
+        unlist(dat5$estimated.final.highschool.year))
+
+remove(dat4A, dat4B)
 
 ## ----------------------------------------------------------------##
 ## GOAL: Assign 
+
+dat6 <- merge(dat5, dat10, by.x = c("postcode.estimated.final.highschool.year", "estimated.final.highschool.year"), by.y = c("postcode", "period"))
+
 
 
 
