@@ -1,15 +1,14 @@
 ## This module loads the raw data sets for different years and 
 ## periods. 
 
-## Unfortunately, there is NO consistency in the data folders provided 
-## by the Ecuadorian government. As such, filepaths for every individual
-## download need to be specified. More information on the methods used
-## can be found in the module_0_Data_Gathering.md document. 
 
+## ----------------------------------------------------------------##
+## GOAL: load packages and data set. 
 library(pacman)
 pacman::p_load(dplyr, haven)
 
 
+## ----------------------------------------------------------------##
 ## GOAL: download all data from September 2014 to September 2019 (excluding two data sets). 
 
 ## METHOD: create download and store file function.
@@ -44,7 +43,6 @@ load.files <- function(x) {
                 
 }
    
-
 ## METHOD: create list of links to files, filepaths and dates per 
 ## dataframe. 
 
@@ -116,6 +114,7 @@ links <- list(y2019sep, y2019jun, y2019mar, y2018dec, y2018sep, y2018jun, y2018m
 all.data <- lapply(links, load.files)
 
 
+## ----------------------------------------------------------------##
 ## GOAL: add two dataframes from September 2015 and September 2019
 ## which have zipfiles within zipfiles.
 
@@ -173,6 +172,8 @@ add.to.list <- function(element, list) {
 all.data.1 <- add.to.list(y2015sep, all.data)
 all.data.1 <- add.to.list(y2017sep, all.data.1) 
 
+
+## ----------------------------------------------------------------##
 ## GOAL: Load data frames from December 2007 to December 2014, which 
 ## are stored in a master zipfile document.
 
@@ -222,18 +223,19 @@ y2013 <- c("\\BBDD_ENEMDU_Completas\\bdd_enemdu_15anios_12_2013.zip",
            "\\bdd_enemdu_15anios_12_2013\\201312_EnemduBDD_15anios.sav",
            "2013-12-31")
 
-
 ## METHOD: Create a list of dataframes. 
 list <- list(y2007, y2008, y2009, y2010, y2011, y2012, y2013)
 all.data.2 <- lapply(list, unzip.in.td)
 unlink(temp)
 
 
+## ----------------------------------------------------------------##
 ## GOAL: Merge all data sets into one list:
 dat0 <- c(all.data.1, all.data.2)
-        
-
+ 
+       
+## ----------------------------------------------------------------##
 ## GOAL: save data. 
-saveRDS(dat0, "raw_data.survey.rds")
+saveRDS(dat0, "raw_data_survey.rds")
 rm(list = ls())
 
