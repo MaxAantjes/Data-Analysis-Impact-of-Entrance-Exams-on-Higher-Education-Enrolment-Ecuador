@@ -1,167 +1,103 @@
-## This module merges columns and creates new variables. 
-
-## Load packages and data set.
-
-library(pacman)
-pacman::p_load(dplyr, stringr)
-
-dat0 <- readRDS("modified_data_1.csv")
-list0 <- readRDS("codes.csv")
-list0$codes <- as.integer(list0$codes)
+## This module generates a dataframe classifying each postcode
+## in terms of student/teacher ratio per academic year.
 
 
-## GOAL: know whether there is information on the place of birth
-## of the individual.
-
-## METHOD: select rows where born.at.current.address equals
-## NA. Replace place.of.birth. with NA. 
-
-bna <- dat0 %>%
-        filter(is.na(born.at.current.address)) %>%
-        mutate(place.of.birth = NA) %>%
-        select(-born.at.current.address)
-
-## GOAL: know whether the individuals who were born at the survey
-## location were born in rural or urban areas. 
-
-## METHOD: Select rows where born.at.current.address equals
-## yes. Replace place.of.birth with survey.location (which is 
-## already a factor variable with levels "urban" and "rural"). 
-
-bsl <- dat0 %>%
-        filter(born.at.current.address == "yes") %>%
-        mutate(place.of.birth = current.address) %>%
-        select(-born.at.current.address)
+## ----------------------------------------------------------------##
+## GOAL: load packages and data set.
+library(openxlsx, stringr)
+dat0 <- read.xlsx("Registros-Administrativos-2019-2020-Inicio(1).xlsx", sheet = "Registros Administrativos", startRow = 13)
 
 
-## GOAL: know whether the individuals who were not born at the
-## survey location were born abroad. .
+## ----------------------------------------------------------------##
+## GOAL: download raw data.
 
-## METHOD: select rows where born.at.current.address equals
-## no.as.international. Replace place.of.birth with "abroad". 
+## METHOD: generate list of urls
+y2009s <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10555"
+y2010s <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10557"
+y2011s <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10559"
+y2012s <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10561"
+y2013s <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=12176"
+y2014s <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10567"
+y2015s <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10569"
+y2016s <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10573"
 
-ba <- dat0 %>%
-        filter(born.at.current.address == "no.as.international") %>%
-        mutate(place.of.birth = "abroad") %>%
-        select(-born.at.current.address)
+y2009e <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10556" 
+y2010e <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10558"
+y2011e <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10560"
+y2012e <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10562"
+y2013e <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=12177"
+y2014e <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10568"
+y2015e <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=10571"
+y2016e <- "https://educacion.gob.ec/wp-content/plugins/download-monitor/download.php?id=12205"
 
+links <- list(y2009s, y2009e, y2010s, y2010e, y2011s, y2011e, y2012s, y2012e, 
+              y2013s, y2013e, y2014s, y2014e, y2015s, y2015e, y2016s, y2016e)
 
-## GOAL: know whether the individuals who were not born at the
-## survey location were born in rural or urban areas. 
-
-## METHOD: select rows where born.at.current.address equals
-## no.as.national. The data takes the form of integer postcode 
-## values. Match rural codes with "rural" and urban codes with 
-## "urban" through function. 
-
-be <- dat0 %>%
-        filter(born.at.current.address == "no.as.national") %>%
-        select(-born.at.current.address)
-
-
-rurORurb <- function(x, y = list0) {
+## METHOD: create apropriate function to load xlsx files. 
+load.xlsx <- function(x) {
         
-        if (is.na(x) == TRUE) {
-                
-                c <- NA
-                
-        } else {
-                
-               c <-  y$area[y$codes == x]
-               
-               if(identical(c, character(0))) {
-                       
-                       c <- "code not found"
-               }
-                        
-        }
+        y <- read.xlsx(x, sheet = "Informe", startRow = 11)
         
-        return(c)
+        return(y)
+        
 }
 
+## METHOD: run function on url list. 
+dat0 <- lapply(links, load.xlsx)
 
-be$place.of.birth <- sapply(be$place.of.birth, rurORurb)
 
+## ----------------------------------------------------------------##
+## GOAL: create clean and tidy data set.  
 
-## GOAL: Merge the three subsets back into a single data.frame.  
+## METHOD: create function to clean and tidy data. It calculates the
+## teacher student ratio for each school and then takes the mean
+## between schools for each postcode. Schools with less than 1
+## teachers or less than 1 students are excluded. Data on the 
+## identifying the schoolyear for each data set are conserved. 
+
+tidy.data <- function(x) {
         
-dat1 <- rbind(be, ba, bsl, bna)
-dat1$place.of.birth <- factor(dat1$place.of.birth, 
-                              levels = c("urban", "rural", "abroad",
-                                         "code not found"),
-                              labels = c("urban", "rural", "abroad",
-                                         "code not found"))
-
-
-## GOAL: Replace codes in location.prior.address with factor
-## level "abroad". 
-
-## METHOD: select rows where prior.address.abroad equals "yes".
-## set location.prior.address to "abroad". 
-
-pab <- dat1 %>%
-        filter(prior.address.abroad == "yes") %>%
-        mutate(location.prior.address = "abroad") %>%
-        select(-prior.address.abroad)
-
-
-## GOAL: Replace codes in location.prior.address with factor
-## levels "urban" and "rural". 
-
-## METHOD: select rows where prior.address.abroad equals "no".
-## Apply rurORurb function on location.prior.address. .
-
-pal <- dat1 %>%
-        filter(prior.address.abroad == "no" |
-                       is.na(prior.address.abroad)) %>%
-        select(-prior.address.abroad)
-
-pal$location.prior.address <- sapply(pal$location.prior.address, 
-                                      rurORurb)
-
-
-## GOAL: Merge the two subsets back into a single data.frame. 
-
-dat2 <- rbind(pab, pal)
-
-
-## GOAL: Clean up unnecessary NA values in data set (where the
-## question was not asked as information was already given in
-## prior questions). This allows us to see whether NA values
-## are actually missing data. 
-
-## METHOD: set time.at.current.address to age if ever.moved
-## equals "no". Set prior address to "none". 
-
-nm <- dat2 %>%
-        filter(ever.moved == "no") %>%
-        mutate(time.at.current.address = age) %>%
-        mutate(location.prior.address = "none")
-
-ym <- dat2 %>%
-        filter(ever.moved == "yes" | is.na(ever.moved))
+        a <- x$Periodo
         
-dat3 <- rbind(nm, ym)
-dat3$location.prior.address <- factor(dat3$location.prior.address,
-                                      levels = c("urban", "rural", "abroad",
-                                                 "none", "code not found"),
-                                      labels = c("urban", "rural", "abroad",
-                                                 "none", "code not found"))
+        x <- x %>%
+                select(Cod_Parroquia, Total.Docentes, Total.Estudiantes)%>%
+                filter(Total.Docentes > 0) %>% 
+                filter(Total.Estudiantes > 0) %>%
+                na.omit %>% 
+                mutate(teacher.student.ratio = Total.Docentes/Total.Estudiantes)%>%      
+                group_by(Cod_Parroquia) %>%                         
+                summarise_at(vars(teacher.student.ratio),
+                             list(mean.teacher.student.ratio = mean)) %>%
+                mutate(period = 
+                               str_extract(a[1], 
+                                           "[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]")) %>%
+                mutate(measurement.point = 
+                               str_remove(a[1], 
+                                          "[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9] +")) %>%
+                select(Cod_Parroquia, period, measurement.point, mean.teacher.student.ratio)
+        
+        names(x)[1] <- "postcode"
+        return(x)
+        
+}
+
+## METHOD: apply function on list of datasets. 
+dat1 <- lapply(dat0, tidy.data)
+
+## METHOD: bind data set into one data set. 
+dat2 <- do.call(rbind, dat1)
+
+## METHOD: calculate the mean of the student teacher ratio at the end and 
+## beginning of a particular academic year. 
+dat2 <- dat2 %>%
+        group_by(postcode, period) %>%
+        summarise(mean.teacher.student.ratio = mean(mean.teacher.student.ratio))
 
 
-## METHOD: set obtained.degree to "no" if higher.education.level
-## equals "none". Set field.of.degree to "none" if obtained.degree
-## equals "no". 
-
-dat3$obtained.degree[dat3$higher.education.level == "none"] <- "no"
-dat3$field.of.degree[dat3$obtained.degree == "no"] <- "none"
-dat3$obtained.degree <- factor(dat3$obtained.degree)
-
-
-## Order columns in intuitive way.
-dat3 <- dat3[, c(13, 2, 3, 5, 6, 1, 7, 4, 15, 8, 9, 10, 14, 11, 12)]
-
-
-## We now actually now whether NA values are missing. 
-saveRDS(dat3, file = "modified_data_2.csv")
+## ----------------------------------------------------------------##
+## GOAL: Save data. 
+saveRDS(dat2, "tidy_data_student_teacher_ratio.rds")
 rm(list = ls())
+
+
+
