@@ -1,14 +1,12 @@
-## This module cleans and tidies the data. 
+## This module cleans and tidies the survey data. 
 
 
-## Load packages and data set. 
-
+## ----------------------------------------------------------------##
+## GOAL: load packages and data set. 
 library(pacman)
 pacman::p_load(dplyr, lubridate)
 
-dat0 <- readRDS("raw_data.rds")
-df1 <- readRDS("tidy_data_studteachratio.rds")
-df2 <- readRDS("tidy_data_regionarea.rds")
+dat0 <- readRDS("raw_data_survey.rds")
 
 
 ## ----------------------------------------------------------------##
@@ -61,6 +59,7 @@ dat1 <- lapply(dat1, select, survey.location, ciudad, p03, p15,
 dat2 <- do.call(rbind, dat1)
 remove(dat0)
 
+
 ## ----------------------------------------------------------------##
 ## GOAL: Clarify column names. 
 
@@ -72,6 +71,7 @@ names(dat2) <- c("current.address.area", "current.address.postcode", "age",
                  "reason.not.matriculated", "gender")
 
 
+## ----------------------------------------------------------------##
 ## GOAL: Specify variable class and levels for R. 
 
 ## METHOD: Specify factor variables according to surveys and codebook. 
@@ -124,6 +124,7 @@ dat2$gender <- factor(dat2$gender, levels = c(1,2), labels = c("male", "female")
 dat2 <- transform(dat2, survey.date = as.Date(survey.date))
 remove(dat1)
 
+
 ## ----------------------------------------------------------------##
 ## GOAL: Clean up unnecessary NA values in data set (where the
 ## question was not asked as information was already given in
@@ -165,142 +166,13 @@ dat3$prior.address.abroad[dat3$ever.moved == "no"] <- "no"
 ## equals "none". 
 
 dat3$obtained.degree[dat3$higher.education.level == "none"] <- "no"
-remove(a)
-remove(b)
 
-remove(dat2)
-
-
-## ----------------------------------------------------------------##
-## GOAL: Create variables indicating information about the respondent during
-## the estimated period he/she was attending the final year of highschool, 
-## including postcode and date. 
-
-## METHOD: Create a variable with the date and year the respondent was 18.
-
-dat4 <- dat3 %>%
-        filter(age > 17 & age < 22) %>%
-        mutate(estimated.final.highschool.year = (survey.date - (age-18) * 365.2422))
-
-
-## METHOD: Determine the location of respondents during their
-## estimated final school year. Remove current.address and 
-## prior.address variables as they are no longer of interest
-
-dat4 <- dat4 %>%
-        mutate(postcode.estimated.final.highschool.year =
-                       ifelse(ever.moved == "no" | ever.moved == "yes"
-                              & time.at.current.address > 
-                                      (age - (difftime(survey.date, 
-                                                       estimated.final.highschool.year,
-                                                       unit = "weeks"))/52.25), 
-                              current.address.postcode, prior.address.postcode)) %>%
-        select(-c(current.address.postcode, current.address.area,
-                  prior.address.postcode, prior.address.abroad, ever.moved,
-                  time.at.current.address))
+## METHOD: remove NA.values
+dat3 <- dat3 %>%
+        na.omit
 
 
 ## ----------------------------------------------------------------##
-## GOAL: Create new variable indicating the area and the region of the postcodes.
-
-## METHOD: Merge postcode and dat4. 
-
-dat4 <- merge(dat4, postcodes, by.x = "postcode.estimated.final.highschool.year", by.y = "postcodes")
-
-
-## ----------------------------------------------------------------##
-## GOAL: Transform the estimated date respondents were attending their
-## final year in highschool into an interval variable indicating the
-## academic year. 
-
-## METHOD: Create function which replaces as.Date variable with schoolyear at
-## the coast. As schoolyears start in May, all dates before the 5th month indicate
-## prior year-current year should be used. Otherwise current year - next 
-## year should be used. 
-
-schyearcoast <- function(x) {
-        
-        a <- year(x)
-        
-        if(month(x) < 5) {
-                
-                x <- paste0(as.character(a-1), "-", as.character(a)) } else {
-                        
-                        x <- paste0(as.character(a), "-", as.character(a+1))
-                }
-        
-        return(x)
-        
-}
-
-## METHOD: Create function which replaces as.Date variable with schoolyear at
-## the highlands. As schoolyears start in May, all dates before the 9th month indicate
-## prior year-current year should be used. Otherwise current year - next 
-## year should be used. 
-
-
-schyearhlands <- function(x) {
-        
-        a <- year(x)
-        
-        if(month(x) < 9) {
-                
-                x <- paste0(as.character(a-1), "-", as.character(a)) } else {
-                        
-                        x <- paste0(as.character(a), "-", as.character(a+1))
-                }
-        
-        return(x)
-        
-}
-
-## METHOD: Run functions on split data sets (coast and highlands). Remove
-## any respondents with final higschoolyears earlier than year 2008-2009. Remove 
-## any respondents with final later than 2017-2018 (as there are no respondents for 
-## each year in the age group for later years).
-
-dat4A <- dat4 %>%
-        filter(region == 2) %>%
-        filter(estimated.final.highschool.year > "2009-04-30" & 
-                       estimated.final.highschool.year < "2017-05-01")
-
-dat4A$estimated.final.highschool.year <- 
-        lapply(dat4A$estimated.final.highschool.year, schyearcoast)
-
-
-dat4B <- dat4 %>%
-        filter(region == 1) %>%
-        filter(estimated.final.highschool.year > as.Date("2009-08-31") & 
-                       estimated.final.highschool.year < as.Date("2017-09-01"))
-
-dat4B$estimated.final.highschool.year <- 
-        lapply(dat4B$estimated.final.highschool.year, schyearhlands)
-
-
-dat5 <- rbind(dat4A, dat4B)
-dat5$estimated.final.highschool.year <- factor(
-        unlist(dat5$estimated.final.highschool.year))
-
-remove(dat4A, dat4B)
-
-## ----------------------------------------------------------------##
-## GOAL: Assign 
-
-dat6 <- merge(dat5, dat10, by.x = c("postcode.estimated.final.highschool.year", "estimated.final.highschool.year"), by.y = c("postcode", "period"))
-
-
-
-
-## ----------------------------------------------------------------##
-## GOAL: Reorder variables in an intuitive way. 
-
-dat3 <- dat3[, c(13, 16, 3, 4, 5, 6, 2, 1, 7, 4, 15, 8, 9, 10, 14, 11, 12)]
-
-
-                                   
 ## Save data
-saveRDS(dat2, "modified_data_1.csv")
+saveRDS(dat3, "clean_data_survey.rds")
 rm(list = ls())
-
-        
-
