@@ -4,8 +4,62 @@
 ## Create last.migration variable. Note: rows with outside migration are lost. 
 library(pacman)
 pacman::p_load(dplyr, reshape2, ggplot2, zoo)
-dat0 <- readRDS("modified_data_2.csv")
+dat0 <- readRDS("clean_data_survey.rds")
 
+
+## GOAL: Graph the years completed by Ecuadorian youth by
+## ethnicity, area, gender and year. 
+
+dat1 <- dat0 %>%
+        filter(age > 21 & age < 25) 
+dat1$survey.date <- lubridate::year(dat1$survey.date)
+
+areplot <- ggplot(dat1, aes(years.in.education, fill = current.address.area)) + 
+        geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
+        facet_grid(.~survey.date) +
+        labs(y = "Percent", fill="Area") +
+        scale_y_continuous(labels=scales::percent) +
+        facet_wrap(.~survey.date) + theme_bw() +
+        scale_fill_manual(values=c("#999999", "#006400")) + 
+        labs(title = "Years Ecuadorian youth completed in all levels of education by area and year", 
+             subtitle = "Youth corresponds to the age group 22 - 25 years old.",
+             caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
+        xlab("Total number of years") +
+        ylab("proportion of respondents")
+
+genplot <- ggplot(dat1, aes(years.in.education, fill = gender)) + 
+        geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
+        facet_grid(.~survey.date) +
+        labs(y = "Percent", fill="Gender") +
+        scale_y_continuous(labels=scales::percent) +
+        facet_wrap(.~survey.date) + theme_bw() +
+        scale_fill_manual(values=c("#32CD32", "#9400D3")) + 
+        labs(title = "Years Ecuadorian youth completed in all levels of education by gender and year", 
+             subtitle = "Youth corresponds to the age group 22 - 25 years old.",
+             caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
+        xlab("Total number of years") +
+        ylab("proportion of respondents")
+
+dat1$ethnicity <- factor(dat1$ethnicity, levels = c("indigenous", "afroecuadorian",
+                                                    "black", "mulatto", "montubio",
+                                                    "mestizo", "white", "other"),
+                         labels = c("yes", "yes",
+                                    "yes", "yes", 
+                                    "yes", "no", "no","no"))
+
+ethplot <- ggplot(dat1, aes(years.in.education, fill = ethnicity)) + 
+        geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
+        facet_grid(.~survey.date) +
+        labs(y = "Percent", fill="Ethnicity 
+considered 
+vulnerable") +
+        scale_y_continuous(labels=scales::percent) +
+        facet_wrap(.~survey.date) + theme_bw() +
+        labs(title = "Years Ecuadorian youth completed in all levels of education by ethnicity and year", 
+             subtitle = "Youth corresponds to the age group 22 - 25 years old.",
+             caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
+        xlab("Total number of years") +
+        ylab("proportion of respondents")
 
 ## GOAL: Select the group of first year undergraduates.  
 
@@ -244,7 +298,6 @@ migration.table$ratio.r.over.u <-
 ## are currently not matriculated in higher education and never have
 ## been matriculated in education. 
 
-
 RNA.higher.edu <- dat0 %>%
         filter(location.prior.address == "urban" | 
                        location.prior.address == "rural" |
@@ -266,12 +319,25 @@ names(RNA.table) <- gsub(" ", ".", names(RNA.table))
 
 RNA.table[, 3:17] <- (RNA.table[, 3:17]/rowSums(RNA.table[, 3:17]))*100
 
+
+## GOAL: explore gender gap in education in rural and urban areas. 
+
+GE.table <- dcast(first.years, survey.date + current.address + gender ~ current.address)
+GE.table$no.enrolled <- GE.table$urban + GE.table$rural
+GE.table <- GE.table %>%
+        select(-urban, -rural)
+temp.table <- dcast(total, survey.date + current.address + gender ~ current.address)
+temp.table$total <- temp.table$urban + temp.table$rural
+GE.table$total <- temp.table$total
+GE.table$proportion <- (GE.table$no.enrolled/GE.table$total)*100 
+
 ## Save data.
 saveRDS(PA.table, "past.address.table")
 saveRDS(PB.table, "place.of.birth.table")
 saveRDS(CA.table, "current.address.table")
 saveRDS(RNA.table, "tidy_data_set_RNA.RDS")
 saveRDS(migration.table, "academic.migration")
+saveRDS(GE.table, "gender_enrolment")
 saveRDS()
 rm(list = ls())
 
