@@ -66,7 +66,7 @@ remove(dat0)
 names(dat2) <- c("current.address.area", "current.address.postcode", "age", 
                  "ethnicity", "ever.moved", "time.at.current.address", 
                  "prior.address.abroad", "prior.address.postcode", 
-                 "higher.education.level", "no.years.completed", 
+                 "education.level", "years.completed.highest.education.level", 
                  "currently.matriculated","obtained.degree", "survey.date", 
                  "reason.not.matriculated", "gender")
 
@@ -79,12 +79,13 @@ names(dat2) <- c("current.address.area", "current.address.postcode", "age",
 dat2$current.address.area <- factor(dat2$current.address.area, level = c(1,2),
                                     labels = c("urban", "rural"))
 
-dat2$higher.education.level <- factor(dat2$higher.education.level, 
+dat2$education.level <- factor(dat2$education.level, 
                                       levels = 1:10, labels = 
-                                              c("none", "none", "none", "none",
-                                                "none", "none", "none", 
-                                                "technical.school",
-                                                "undergraduate", "postgraduate"))
+                                              c("none", "centro de alfabetización", 
+                                                "jardín de infantes", "primaria",
+                                                "educación básica", "secundaría", "bachillerato", 
+                                                "superior no unversitario",
+                                                "superior universitario", "postgrado"))
 
 dat2$obtained.degree <- factor(dat2$obtained.degree, levels = c(1,2), labels =
                                        c("yes", "no"))
@@ -124,6 +125,27 @@ dat2$gender <- factor(dat2$gender, levels = c(1,2), labels = c("male", "female")
 dat2 <- transform(dat2, survey.date = as.Date(survey.date))
 remove(dat1)
 
+## ----------------------------------------------------------------##
+## GOAL: Add a variable calculating the minimum total years enrolled in education. 
+## First we assign the base years required for the highest level of education.
+## This is calculated through the Sistema Anterior, Sistema Actual Reforma
+## Curricular table in the 2019 survey.
+
+dat3 <- dat2
+dat3$years.in.education[dat3$education.level == "none"] <- 0 
+dat3$years.in.education[dat3$education.level == "centro de alfabetización"] <- 0
+dat3$years.in.education[dat3$education.level == "jardín de infantes"] <- 0
+dat3$years.in.education[dat3$education.level == "primaria"] <- 1
+dat3$years.in.education[dat3$education.level == "educación básica"] <- 0
+dat3$years.in.education[dat3$education.level == "secundaría"] <- 6
+dat3$years.in.education[dat3$education.level == "bachillerato"] <- 10
+dat3$years.in.education[dat3$education.level == "superior no universitario"] <- 13
+dat3$years.in.education[dat3$education.level == "superior universitario"] <- 13
+dat3$years.in.education[dat3$education.level == "postgrado"] <- 13
+
+dat3$years.in.education <- dat3$years.in.education + dat3$years.completed.highest.education.level
+remove(dat2)
+
 
 ## ----------------------------------------------------------------##
 ## GOAL: Clean up unnecessary NA values in data set (where the
@@ -135,42 +157,49 @@ remove(dat1)
 ## equals "no". Replace prior.address.postcode with current.address.postcode. 
 ## Replace reason.for.migration with "none". 
 
-a <- dat2 %>%
+a <- dat3 %>%
         filter(ever.moved == "no") %>%
         mutate(time.at.current.address = age) %>%
         mutate(prior.address.postcode = current.address.postcode) 
 
-b <- dat2 %>%
+b <- dat3 %>%
         filter(ever.moved == "yes" | is.na(ever.moved))
 
-dat3 <- rbind(a, b)
+dat4 <- rbind(a, b)
 
 ## METHOD: set reason.for.not.matriculated to "none if 
 ## currently.matriculated equals "yes".
 
-a <- dat3 %>%
+a <- dat4 %>%
         filter(currently.matriculated == "yes") %>%
         mutate(reason.not.matriculated = "none")
 
-b <- dat3 %>%
+b <- dat4 %>%
         filter(currently.matriculated == "no" | is.na(currently.matriculated))
 
-dat3 <- rbind(a, b)
+dat4 <- rbind(a, b)
 
 ## METHOD: set prior.address.abraod to "no" if ever.moved
 ## equals "yes". 
 
-dat3$prior.address.abroad[dat3$ever.moved == "no"] <- "no"
+dat4$prior.address.abroad[dat4$ever.moved == "no"] <- "no"
 
 ## METHOD: set prior.address.abraod to "no" if higher.education.level
 ## equals "none". 
 
-dat3$obtained.degree[dat3$higher.education.level == "none"] <- "no"
+dat4$obtained.degree[dat4$higher.education.level == "none"] <- "no"
 
 ## METHOD: remove NA.values
-dat3 <- dat3 %>%
+dat4 <- dat4 %>%
         na.omit
+remove(dat3)
 
+
+## ----------------------------------------------------------------##
+## GOAL: order columns in an intuitive way.
+
+dat5 <- dat4[, c(13, 3, 15, 4, 2, 1, 5, 6, 7, 8, 9, 10, 16, 11, 14, 12)]
+remove(dat4)
 
 ## ----------------------------------------------------------------##
 ## Save data

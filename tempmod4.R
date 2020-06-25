@@ -8,9 +8,9 @@
 library(pacman)
 pacman::p_load(dplyr, lubridate)
 
-dat0 <- readRDS("raw_data_survey.rds")
+dat0 <- readRDS("clean_data_survey.rds")
 df1 <- readRDS("clean_data_area_region.rds")
-df2 <- readRDS("tidy_data_student_teacher_ratio.rds")
+df2 <- readRDS("clean_data_student_teacher_ratio.rds")
 
 
 ## ----------------------------------------------------------------##
@@ -103,7 +103,7 @@ schyearhlands <- function(x) {
 ## each year in the age group for later years).
 
 dat2A <- dat2 %>%
-        filter(region == 2) %>%
+        filter(region == 1) %>%
         filter(estimated.final.highschool.year > "2009-04-30" & 
                        estimated.final.highschool.year < "2017-05-01")
 
@@ -112,7 +112,7 @@ dat2A$estimated.final.highschool.year <-
 
 
 dat2B <- dat2 %>%
-        filter(region == 1) %>%
+        filter(region == 0) %>%
         filter(estimated.final.highschool.year > as.Date("2009-08-31") & 
                        estimated.final.highschool.year < as.Date("2017-09-01"))
 
@@ -122,7 +122,7 @@ dat2B$estimated.final.highschool.year <-
 
 dat3 <- rbind(dat2A, dat2B)
 dat3$estimated.final.highschool.year <- factor(
-        unlist(dat5$estimated.final.highschool.year))
+        unlist(dat3$estimated.final.highschool.year))
 
 remove(dat2A, dat2B)
 
@@ -131,6 +131,27 @@ remove(dat2A, dat2B)
 ## GOAL: Assign the estimated ratio between student and teacher for the estimated
 ## final school year of each respondent. 
 
-dat4 <- merge(dat3, df2, by.x = c("postcode.estimated.final.highschool.year", "estimated.final.highschool.year"), by.y = c("postcode", "period"))
+dat4 <- merge(dat3, df2, by.x = c("postcode.estimated.final.highschool.year", 
+                                  "estimated.final.highschool.year"), by.y = c("postcode", 
+                                                                               "period"))
 
+dat5 <- dat4
+dat5$higher.education <- factor(dat4$higher.education.level, 
+                                   levels = c("none", "undergraduate", "postgraduate", "technical.school"), 
+                                   labels = c("no", "yes", "yes", "yes"))
+
+dat5 <- dat5 %>%
+        mutate(higher.education = ifelse(higher.education =="no", 0, 1))
+
+
+dat5$ethnicity <- factor(dat5$ethnicity, levels = c("mestizo", "indigenous", "white", "afroecuadorian", "black", "mulatto", "montubio"),
+                         labels = c("mestizo", "indigenous", "white", "other.minority", "other.minority", "other.minority", 
+                                    "other.minority"))
+
+
+mod1 <- glm(higher.education ~ mean.teacher.student.ratio + 
+                    ethnicity + gender + region + area, data = dat5, family = binomial)
+
+ggplot(dat5,aes(higher.education)) + geom_smooth() +
+        facet_wrap(~area.estimated.final.highschool.year)
 
