@@ -64,7 +64,10 @@ Ethnical groups considered not vulnerable: mestizo; white; other.",
         ylab("Proportion of respondents") 
 
 dat2 <- dat1 %>%
-        filter(survey.date == "2007" | survey.date == "2019") 
+        filter(survey.date == "2007" | survey.date == "2019") %>%
+        mutate(primary.school.final.year = ifelse(dat2$survey.date == "2007", 7, 10)) %>%
+        mutate(secondary.school.final.year = ifelse(dat2$survey.date == "2007", 12, 13))
+
 
 areethplot <- ggplot(dat2, aes(years.in.education, fill = ethnicity)) + 
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
@@ -78,17 +81,28 @@ Ethnical groups considered not vulnerable: mestizo; white; other.",
         xlab("Total number of years") +
         ylab("Proportion of respondents") + theme_bw()
 
-aregenplot <- ggplot(dat2, aes(years.in.education, fill = gender)) + 
+aregenplot <- ggplot(data = dat2, aes(years.in.education, fill = gender)) +
+        geom_vline(data = dat2, aes(xintercept = primary.school.final.year,
+                                    color = "Primary"),
+                   size = 0.8, linetype = 1) + 
+        geom_vline(data = dat2, aes(xintercept = secondary.school.final.year, 
+                                    color = "Secondary"),
+                   size = 0.8,  linetype = 1) + 
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
-        facet_grid(current.address.area~survey.date) +
+        facet_grid(current.address.area~survey.date)  + 
         scale_y_continuous(labels=scales::percent)  +
         scale_fill_manual(values=c("#32CD32", "#9400D3")) + 
-        labs(title = "Years Ecuadorian youth completed in all levels of education by gender and year", 
-             subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old.",
+        labs(title = "Number of years Ecuadorian young adults completed \n in all levels of education by gender and year", 
+             subtitle = "\n Young adults refers to respondents in the age group 22 - 25 years old. The \n final school years in 2007 correspond with the old school system, 'Sistema \n Anterior'. The final school years in 2019 correspond with the new school \n system, 'Sistema Actual Reforma Curricular'.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
-        ylab("Proportion of respondents") + theme_bw()
-       
+        ylab("Proportion of respondents") + theme_bw() +
+        scale_color_manual(name = "Final School Year", values=c("#F9CCCA", "#add8e6")) +
+        theme(plot.title=element_text(size=14, face="bold", vjust=-1),
+              plot.subtitle=element_text(size=11, face="italic", color="black"))
+
+
+
 ## GOAL: Select the group of first year undergraduates.  
 
 first.years <- dat0 %>%
