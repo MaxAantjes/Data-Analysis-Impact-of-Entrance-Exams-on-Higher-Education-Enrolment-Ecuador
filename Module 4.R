@@ -25,7 +25,7 @@ areplot <- ggplot(dat1, aes(years.in.education, fill = current.address.area)) +
              subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
-        ylab("proportion of respondents")
+        ylab("Proportion of respondents")
 
 genplot <- ggplot(dat1, aes(years.in.education, fill = gender)) + 
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
@@ -38,7 +38,7 @@ genplot <- ggplot(dat1, aes(years.in.education, fill = gender)) +
              subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
-        ylab("proportion of respondents")
+        ylab("Proportion of respondents")
 
 dat1$ethnicity <- factor(dat1$ethnicity, levels = c("indigenous", "afroecuadorian",
                                                     "black", "mulatto", "montubio",
@@ -59,8 +59,19 @@ vulnerable") +
              subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
-        ylab("proportion of respondents")
+        ylab("Proportion of respondents") 
 
+dat2 <- dat1 %>%
+        filter(survey.date == "2007" | survey.date == "2019") 
+
+areethplot <- ggplot(dat2, aes(years.in.education, fill = ethnicity)) + 
+        geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
+        facet_grid(survey.date~current.address.area)
+
+aregenplot <- ggplot(dat2, aes(years.in.education, fill = gender)) + 
+        geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
+        facet_grid(survey.date~current.address.area)
+       
 ## GOAL: Select the group of first year undergraduates.  
 
 first.years <- dat0 %>%
