@@ -22,7 +22,7 @@ areplot <- ggplot(dat1, aes(years.in.education, fill = current.address.area)) +
         facet_wrap(.~survey.date) + theme_bw() +
         scale_fill_manual(values=c("#999999", "#006400")) + 
         labs(title = "Years Ecuadorian youth completed in all levels of education by area and year", 
-             subtitle = "Youth corresponds to the age group 22 - 25 years old.",
+             subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
         ylab("proportion of respondents")
@@ -35,7 +35,7 @@ genplot <- ggplot(dat1, aes(years.in.education, fill = gender)) +
         facet_wrap(.~survey.date) + theme_bw() +
         scale_fill_manual(values=c("#32CD32", "#9400D3")) + 
         labs(title = "Years Ecuadorian youth completed in all levels of education by gender and year", 
-             subtitle = "Youth corresponds to the age group 22 - 25 years old.",
+             subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
         ylab("proportion of respondents")
@@ -56,7 +56,7 @@ vulnerable") +
         scale_y_continuous(labels=scales::percent) +
         facet_wrap(.~survey.date) + theme_bw() +
         labs(title = "Years Ecuadorian youth completed in all levels of education by ethnicity and year", 
-             subtitle = "Youth corresponds to the age group 22 - 25 years old.",
+             subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
         ylab("proportion of respondents")
