@@ -56,7 +56,9 @@ vulnerable") +
         scale_y_continuous(labels=scales::percent) +
         facet_wrap(.~survey.date) + theme_bw() +
         labs(title = "Years Ecuadorian youth completed in all levels of education by ethnicity and year", 
-             subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old.",
+             subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old. 
+Ethnical groups considered vulnerable: indigenous;afroecuadorian; black; mulatto; montubio. 
+Ethnical groups considered not vulnerable: mestizo; white; other.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
         ylab("Proportion of respondents") 
@@ -66,11 +68,26 @@ dat2 <- dat1 %>%
 
 areethplot <- ggplot(dat2, aes(years.in.education, fill = ethnicity)) + 
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
-        facet_grid(survey.date~current.address.area)
+        facet_grid(current.address.area~survey.date) +
+        scale_y_continuous(labels=scales::percent) +
+        labs(title = "Years Ecuadorian youth completed in all levels of education by area, ethnicity in 2007", 
+             subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old. 
+Ethnical groups considered vulnerable: indigenous;afroecuadorian; black; mulatto; montubio. 
+Ethnical groups considered not vulnerable: mestizo; white; other.",
+             caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
+        xlab("Total number of years") +
+        ylab("Proportion of respondents") + theme_bw()
 
 aregenplot <- ggplot(dat2, aes(years.in.education, fill = gender)) + 
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
-        facet_grid(survey.date~current.address.area)
+        facet_grid(current.address.area~survey.date) +
+        scale_y_continuous(labels=scales::percent)  +
+        scale_fill_manual(values=c("#32CD32", "#9400D3")) + 
+        labs(title = "Years Ecuadorian youth completed in all levels of education by gender and year", 
+             subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old.",
+             caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
+        xlab("Total number of years") +
+        ylab("Proportion of respondents") + theme_bw()
        
 ## GOAL: Select the group of first year undergraduates.  
 
