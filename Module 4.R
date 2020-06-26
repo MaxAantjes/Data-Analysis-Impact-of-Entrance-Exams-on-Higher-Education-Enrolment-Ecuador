@@ -15,6 +15,7 @@ dat1 <- dat0 %>%
 dat1$survey.date <- lubridate::year(dat1$survey.date)
 
 
+## GOAL: Create histogram showing number of years completed by Ecuadorian youth by area.
 histare <- ggplot(dat1, aes(years.in.education, fill = current.address.area)) + 
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
         facet_grid(.~survey.date) +
@@ -23,12 +24,13 @@ histare <- ggplot(dat1, aes(years.in.education, fill = current.address.area)) +
         facet_wrap(.~survey.date) + theme_bw() +
         scale_fill_manual(values=c("#999999", "#006400")) + 
         labs(title = "Years Ecuadorian youth completed in all levels of education by area and year", 
-             subtitle = "Youth corresponds with respondents in the age group 22 - 24 years old.",
+             subtitle = "Youth corresponds with respondents in the age group 22 - 24 years old.", 
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
         ylab("Proportion of respondents")
 
 
+## GOAL: Create histogram showing number of years completed by Ecuadorian youth by gender.
 histgen <- ggplot(dat1, aes(years.in.education, fill = gender)) + 
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
         facet_grid(.~survey.date) +
@@ -37,12 +39,13 @@ histgen <- ggplot(dat1, aes(years.in.education, fill = gender)) +
         facet_wrap(.~survey.date) + theme_bw() +
         scale_fill_manual(values=c("#32CD32", "#9400D3")) + 
         labs(title = "Years Ecuadorian youth completed in all levels of education by gender and year", 
-             subtitle = "Youth corresponds with respondents in the age group 22 - 24 years old.",
+             subtitle = "Youth corresponds with respondents in the age group 22 - 24 years old.", 
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
         ylab("Proportion of respondents")
 
 
+## GOAL: Create histogram showing number of years completed by Ecuadorian youth by ethnicity.
 dat1$ethnicity <- factor(dat1$ethnicity, levels = c("indigenous", "afroecuadorian",
                                                     "black", "mulatto", "montubio",
                                                     "mestizo", "white", "other"),
@@ -71,10 +74,11 @@ Ethnical groups considered not vulnerable: mestizo; white.",
 
 dat2 <- dat2 %>%
         filter(survey.date == "2007" | survey.date == "2013" | survey.date == "2019") %>%
-        mutate(primary.school.final.year = ifelse(survey.date == "2007", 7, 10)) %>%
-        mutate(secondary.school.final.year = ifelse(survey.date == "2007", 12, 13)) 
+        mutate(primary.school.final.year = ifelse(survey.date == "2019", 13, 12)) %>%
+        mutate(secondary.school.final.year = ifelse(survey.date == "2019", 13, 12)) 
 
 
+## GOAL: Create histogram showing number of years completed by Ecuadorian youth by ethnicity, area and year. 
 histareeth <- ggplot(data = dat2, aes(years.in.education, fill = ethnicity)) +
         geom_vline(data = dat2, aes(xintercept = primary.school.final.year,
                                     color = "Primary"),
@@ -96,6 +100,7 @@ histareeth <- ggplot(data = dat2, aes(years.in.education, fill = ethnicity)) +
               plot.subtitle=element_text(size=11, face="italic", color="black"))
 
 
+## GOAL: Create histogram showing number of years completed by Ecuadorian youth by gender, area and year.
 histaregen <- ggplot(data = dat2, aes(years.in.education, fill = gender)) +
         geom_vline(data = dat2, aes(xintercept = primary.school.final.year,
                                     color = "Primary"),
@@ -116,6 +121,8 @@ histaregen <- ggplot(data = dat2, aes(years.in.education, fill = gender)) +
         theme(plot.title=element_text(size=14, face="bold", vjust=-1),
               plot.subtitle=element_text(size=11, face="italic", color="black"))
 
+
+## GOAL: Create boxplot showing number of years completed by Ecuadorian youth by gender, area and year.
 dat3 <- dat1 %>%
         filter(survey.date %in% c(2007, 2013, 2019)) %>%
         filter(ethnicity == "Considered Vulnerable" | ethnicity == "Not Considered Vulnerable")
@@ -151,7 +158,7 @@ names(labels)[1:3] <- c("current.address.area", "gender", "survey.date")
 boxgenare <- ggplot(data = dat3, aes(x = gender, y = years.in.education, fill = factor(survey.date))) +
         geom_boxplot(aes(fill=factor(survey.date)), position=position_dodge(.9)) + 
         facet_grid(.~current.address.area)  + 
-        labs(title = "Number of years Ecuadorian young adults completed in all levels of education \nby gender and year", 
+        labs(title = "Number of years Ecuadorian young adults completed in all levels of education \nby area, gender and year", 
              subtitle = "\n Young adults refers to respondents in the age group 22 - 25 years old. The final school years in 2007 correspond with the old school system, \n 'Sistema Anterior'. The final school years in 2019 correspond with the new school system, 'Sistema Actual Reforma Curricular'. The value \nn refers to number of observations and the value m refers to mean for each year by gender and area.\n",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("") + theme_bw() + 
@@ -164,8 +171,9 @@ boxgenare <- ggplot(data = dat3, aes(x = gender, y = years.in.education, fill = 
         geom_text(data = labels, aes(label = labels, y = max(dat3$years.in.education) + 1), position = position_dodge(.9), size = 2.5) +
         scale_shape_manual(name = "Shapes", values = c("mean" = "x")) +
         scale_fill_manual(name = "Survey Date", values=c("#F0F8FF", "#ADD8E6", "#6ca0dc"))
-        
-
+ 
+       
+## GOAL: Create boxplot showing number of years completed by Ecuadorian youth by gender, ethnicity and year.
 lengths <- dat3 %>%
         group_by(ethnicity, gender, survey.date) %>%
         summarize(n())
@@ -197,7 +205,7 @@ names(labels2)[1:3] <- c("ethnicity", "gender", "survey.date")
 boxgeneth <- ggplot(data = dat3, aes(x = gender, y = years.in.education, fill = factor(survey.date))) +
         geom_boxplot(aes(fill=factor(survey.date)), position=position_dodge(.9)) + 
         facet_grid(.~ethnicity)  + 
-        labs(title = "Number of years Ecuadorian young adults completed in all levels of education \nby gender and year", 
+        labs(title = "Number of years Ecuadorian young adults completed in all levels of education \nby ethnicity, gender and year", 
              subtitle = "\n Young adults refers to respondents in the age group 22 - 25 years old. The final school years in 2007 correspond with the old school system, \n 'Sistema Anterior'. The final school years in 2019 correspond with the new school system, 'Sistema Actual Reforma Curricular'. The value \nn refers to number of observations and the value m refers to mean for each year by gender and area.\n",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("") + theme_bw() + 
