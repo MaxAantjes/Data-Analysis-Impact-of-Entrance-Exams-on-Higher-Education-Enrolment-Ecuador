@@ -3,7 +3,7 @@
 
 ## Create last.migration variable. Note: rows with outside migration are lost. 
 library(pacman)
-pacman::p_load(dplyr, reshape2, ggplot2, zoo)
+pacman::p_load(dplyr, reshape2, ggplot2, zoo, tidyr)
 dat0 <- readRDS("clean_data_survey.rds")
 
 
@@ -14,6 +14,7 @@ dat1 <- dat0 %>%
         filter(age > 21 & age < 25) 
 dat1$survey.date <- lubridate::year(dat1$survey.date)
 
+
 areplot <- ggplot(dat1, aes(years.in.education, fill = current.address.area)) + 
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
         facet_grid(.~survey.date) +
@@ -22,10 +23,11 @@ areplot <- ggplot(dat1, aes(years.in.education, fill = current.address.area)) +
         facet_wrap(.~survey.date) + theme_bw() +
         scale_fill_manual(values=c("#999999", "#006400")) + 
         labs(title = "Years Ecuadorian youth completed in all levels of education by area and year", 
-             subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old.",
+             subtitle = "Youth corresponds with respondents in the age group 22 - 24 years old.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
         ylab("Proportion of respondents")
+
 
 genplot <- ggplot(dat1, aes(years.in.education, fill = gender)) + 
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
@@ -35,17 +37,19 @@ genplot <- ggplot(dat1, aes(years.in.education, fill = gender)) +
         facet_wrap(.~survey.date) + theme_bw() +
         scale_fill_manual(values=c("#32CD32", "#9400D3")) + 
         labs(title = "Years Ecuadorian youth completed in all levels of education by gender and year", 
-             subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old.",
+             subtitle = "Youth corresponds with respondents in the age group 22 - 24 years old.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
         ylab("Proportion of respondents")
+
 
 dat1$ethnicity <- factor(dat1$ethnicity, levels = c("indigenous", "afroecuadorian",
                                                     "black", "mulatto", "montubio",
                                                     "mestizo", "white", "other"),
                          labels = c("yes", "yes",
                                     "yes", "yes", 
-                                    "yes", "no", "no","no"))
+                                    "yes", "no", "no", NA))
+
 
 ethplot <- ggplot(dat1, aes(years.in.education, fill = ethnicity)) + 
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
@@ -56,30 +60,41 @@ vulnerable") +
         scale_y_continuous(labels=scales::percent) +
         facet_wrap(.~survey.date) + theme_bw() +
         labs(title = "Years Ecuadorian youth completed in all levels of education by ethnicity and year", 
-             subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old. 
+             subtitle = "Youth corresponds with respondents in the age group 22 - 24 years old. 
 Ethnical groups considered vulnerable: indigenous;afroecuadorian; black; mulatto; montubio. 
-Ethnical groups considered not vulnerable: mestizo; white; other.",
+Ethnical groups considered not vulnerable: mestizo; white.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
         ylab("Proportion of respondents") 
 
+
 dat2 <- dat1 %>%
         filter(survey.date == "2007" | survey.date == "2019") %>%
-        mutate(primary.school.final.year = ifelse(dat2$survey.date == "2007", 7, 10)) %>%
-        mutate(secondary.school.final.year = ifelse(dat2$survey.date == "2007", 12, 13))
+        mutate(primary.school.final.year = ifelse(survey.date == "2007", 7, 10)) %>%
+        mutate(secondary.school.final.year = ifelse(survey.date == "2007", 12, 13)) %>%
+        filter(ethnicity == "yes" | ethnicity == "no")
 
 
-areethplot <- ggplot(dat2, aes(years.in.education, fill = ethnicity)) + 
+areethplot <- ggplot(data = dat2, aes(years.in.education, fill = ethnicity)) +
+        geom_vline(data = dat2, aes(xintercept = primary.school.final.year,
+                                    color = "Primary"),
+                   size = 0.8, linetype = 1) + 
+        geom_vline(data = dat2, aes(xintercept = secondary.school.final.year, 
+                                    color = "Secondary"),
+                   size = 0.8,  linetype = 1) + 
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
-        facet_grid(current.address.area~survey.date) +
-        scale_y_continuous(labels=scales::percent) +
-        labs(title = "Years Ecuadorian youth completed in all levels of education by area, ethnicity in 2007", 
-             subtitle = "Youth corresponds with respondents in the age group 22 - 25 years old. 
-Ethnical groups considered vulnerable: indigenous;afroecuadorian; black; mulatto; montubio. 
-Ethnical groups considered not vulnerable: mestizo; white; other.",
+        facet_grid(current.address.area~survey.date)  + 
+        scale_y_continuous(labels=scales::percent)  +
+        scale_fill_manual(name = "Ethnicity \n considered \n vulnerable", values=c("#32CD32", "#9400D3")) + 
+        labs(title = "Number of years Ecuadorian young adults completed \n in all levels of education by gender and year", 
+             subtitle = "\n Young adults refers to respondents in the age group 22 - 25 years old. The \n final school years in 2007 correspond with the old school system, 'Sistema \n Anterior'. The final school years in 2019 correspond with the new school \n system, 'Sistema Actual Reforma Curricular'. Ethnical groups considered \n vulnerable: indigenous; afroecuadorian; black; mulatto; montubio. Ethnical \n groups considered not vulnerable: mestizo; white; other.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
         xlab("Total number of years") +
-        ylab("Proportion of respondents") + theme_bw()
+        ylab("Proportion of respondents") + theme_bw() +
+        scale_color_manual(name = "Final School Year", values=c("#F9CCCA", "#add8e6")) +
+        theme(plot.title=element_text(size=14, face="bold", vjust=-1),
+              plot.subtitle=element_text(size=11, face="italic", color="black"))
+
 
 aregenplot <- ggplot(data = dat2, aes(years.in.education, fill = gender)) +
         geom_vline(data = dat2, aes(xintercept = primary.school.final.year,
@@ -101,8 +116,68 @@ aregenplot <- ggplot(data = dat2, aes(years.in.education, fill = gender)) +
         theme(plot.title=element_text(size=14, face="bold", vjust=-1),
               plot.subtitle=element_text(size=11, face="italic", color="black"))
 
+dat3 <- dat1 %>%
+        filter(survey.date %in% c(2007, 2013, 2019)) %>%
+        filter(ethnicity == "yes" | ethnicity == "no")
 
+p_meds <- ddply(dat2, .(gender), summarise, med = median(years.in.education))
 
+dataMedian <- summarise(group_by(dataInput, key), MD = median(value))
+
+means <- aggregate(years.in.education ~  gender * current.address.area * survey.date, dat3, mean)
+means$years.in.education <- round(means$years.in.education, digits = 2)
+
+lengths <- dat3 %>%
+        group_by(current.address.area, gender, survey.date) %>%
+        summarize(n())
+means <- dat3 %>%
+        group_by(current.address.area, gender, survey.date) %>%
+        summarize(mean(years.in.education))
+names(means)[4] <- "mean" 
+
+means$mean <- round(means$mean, digits = 2)
+
+rowvalue <- function(x) {
+        a <- c()
+        for(i in 1:nrow(x)) {
+                a[i] <- i
+        }
+        x$row <- a
+        return(x)
+}
+
+lengths <- rowvalue(lengths)
+means <- rowvalue(means)
+labels <- merge(lengths, means, by.x = "row", by.y ="row")
+
+labels$labels <- paste0("n=", temp$`n()`, "\n", "m=", temp$mean)
+labels <- labels %>%
+        select(current.address.area.x, gender.x, survey.date.x, labels)
+names(labels)[1:3] <- c("current.address.area", "gender", "survey.date")
+
+genbox <- ggplot(data = dat3, aes(x = gender, y = years.in.education, fill = factor(survey.date))) +
+        geom_boxplot(aes(fill=factor(survey.date)), position=position_dodge(.9)) + 
+        facet_grid(.~current.address.area)  + 
+        labs(title = "Number of years Ecuadorian young adults completed in all levels of education \nby gender and year", 
+             subtitle = "\n Young adults refers to respondents in the age group 22 - 25 years old. The final school years in 2007 correspond with the old school system, \n 'Sistema Anterior'. The final school years in 2019 correspond with the new school system, 'Sistema Actual Reforma Curricular'. The value \nn refers to number of observations and the value m refers to mean for each year by gender and area.\n",
+             caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
+        xlab("") + theme_bw() + 
+        ylab("Total number of years") +
+        theme(plot.title=element_text(size=14, face="bold", vjust=-1),
+              plot.subtitle=element_text(size=9, face="italic", color="black"),
+              strip.background =element_rect(fill= "#9dc183"),
+              strip.text = element_text(size = 12, face = "bold")) + 
+        stat_summary(aes(fill=factor(survey.date), shape = "mean"), fun=mean, geom="point", position=position_dodge(.9), color="black", size=3) +
+        geom_text(data = labels, aes(label = labels, y = max(dat3$years.in.education) + 1), position = position_dodge(.9), size = 2.5) +
+        scale_shape_manual(name = "Shapes", values = c("mean" = "x")) +
+        scale_fill_manual(name = "Survey Date", values=c("#F0F8FF", "#ADD8E6", "#6ca0dc"))
+        
+        
+                     
+
+        
+               
+                     
 ## GOAL: Select the group of first year undergraduates.  
 
 first.years <- dat0 %>%
