@@ -86,7 +86,7 @@ Ethnical groups considered not vulnerable: mestizo; white.",
 
 dat2 <- dat2 %>%
         filter(survey.date == "2007" | survey.date == "2013" | survey.date == "2019") %>%
-        mutate(primary.school.final.year = ifelse(survey.date == "2019", 13, 12)) %>%
+        mutate(primary.school.final.year = ifelse(survey.date == "2019", 10, 7)) %>%
         mutate(secondary.school.final.year = ifelse(survey.date == "2019", 13, 12)) 
 
 
@@ -101,7 +101,7 @@ histareeth <- ggplot(data = dat2, aes(years.in.education, fill = ethnicity)) +
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
         facet_grid(current.address.area~survey.date)  + 
         scale_y_continuous(labels=scales::percent)  +
-        scale_fill_manual(name = "Ethnicity \n considered \n vulnerable", values=c("#32CD32", "#9400D3")) + 
+        scale_fill_manual(name = "Ethnicity", values=c("#32CD32", "#9400D3")) + 
         labs(title = "Number of years Ecuadorian young adults completed \n in all levels of education by gender and year", 
              subtitle = "\n Young adults refers to respondents in the age group 22 - 25 years old. The \n final school years in 2007 correspond with the old school system, 'Sistema \n Anterior'. The final school years in 2019 correspond with the new school \n system, 'Sistema Actual Reforma Curricular'. Ethnical groups considered \n vulnerable: indigenous; afroecuadorian; black; mulatto; montubio. Ethnical \n groups considered not vulnerable: mestizo; white; other.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
