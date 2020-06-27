@@ -3,7 +3,7 @@
 
 ## Create last.migration variable. Note: rows with outside migration are lost. 
 library(pacman)
-pacman::p_load(dplyr, reshape2, ggplot2, zoo, tidyr)
+pacman::p_load(dplyr, reshape2, ggplot2, zoo, tidyr, RColorBrewer, colorRampPalett)
 dat0 <- readRDS("clean_data_survey.rds")
 
 
@@ -12,9 +12,20 @@ dat0 <- readRDS("clean_data_survey.rds")
 
 dat1 <- dat0 %>%
         filter(age > 21 & age < 25) 
-dat1$survey.date <- lubridate::year(dat1$survey.date)
+dat1$survey.date <- lubridate::year(dat1$survey.date) 
 
-d
+pop <- dat1 %>%
+        group_by(current.address.area, survey.date, ethnicity) %>%
+        summarise(n())
+names(pop)[4] <- "count"
+pop$survey.date <- factor(pop$survey.date)
+
+hispop <- ggplot(pop, aes(y = count, x = survey.date, fill = ethnicity)) + geom_bar(position= "fill", stat = "identity", ) + facet_grid(.~current.address.area) + scale_y_continuous(labels=scales::percent) + scale_fill_manual(values = rev(colorRampPalette(brewer.pal(n = 8,"BuPu"))(8))) + theme(plot.title=element_text(size=14, face="bold", vjust=-1), plot.subtitle=element_text(size=9, face="italic", color="black"), axis.text.x = element_text(angle = 90), strip.background =element_rect(fill= "#D0F0C0"), strip.text = element_text(size = 12, face = "bold"))  + 
+        labs(title = "Ethnicity of Ecuadorian Youth by Urban and Rural Population", 
+             subtitle = "\nYouth corresponds with respondents in the age group 22 - 24 years old. Ethnicity is self-reported.\n", 
+             caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
+        xlab("survey year") +
+        ylab("Proportion of respondents")
 
 ## GOAL: Create histogram showing number of years completed by Ecuadorian youth by area.
 histare <- ggplot(dat1, aes(years.in.education, fill = current.address.area)) + 
