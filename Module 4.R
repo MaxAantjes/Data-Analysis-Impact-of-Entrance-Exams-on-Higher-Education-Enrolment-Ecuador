@@ -3,7 +3,7 @@
 
 ## Create last.migration variable. Note: rows with outside migration are lost. 
 library(pacman)
-pacman::p_load(dplyr, reshape2, ggplot2, zoo, tidyr, RColorBrewer, colorRampPalett)
+pacman::p_load(dplyr, reshape2, ggplot2, zoo, tidyr, RColorBrewer, grDevices)
 dat0 <- readRDS("clean_data_survey.rds")
 
 
@@ -20,7 +20,7 @@ pop <- dat1 %>%
 names(pop)[4] <- "count"
 pop$survey.date <- factor(pop$survey.date)
 
-hispop <- ggplot(pop, aes(y = count, x = survey.date, fill = ethnicity)) + geom_bar(position= "fill", stat = "identity", ) + facet_grid(.~current.address.area) + scale_y_continuous(labels=scales::percent) + scale_fill_manual(values = rev(colorRampPalette(brewer.pal(n = 8,"BuPu"))(8))) + theme(plot.title=element_text(size=14, face="bold", vjust=-1), plot.subtitle=element_text(size=9, face="italic", color="black"), axis.text.x = element_text(angle = 90), strip.background =element_rect(fill= "#D0F0C0"), strip.text = element_text(size = 12, face = "bold"))  + 
+hispop <- ggplot(pop, aes(y = count, x = survey.date, fill = ethnicity)) + geom_bar(position= "fill", stat = "identity", ) + facet_grid(.~current.address.area) + scale_y_continuous(labels=scales::percent) + scale_fill_manual(values = rev(brewer.pal(n = 8,"Accent"))) + theme(plot.title=element_text(size=14, face="bold", vjust=-1), plot.subtitle=element_text(size=9, face="italic", color="black"), axis.text.x = element_text(angle = 90), strip.background =element_rect(fill= "#D0F0C0"), strip.text = element_text(size = 12, face = "bold"))  + 
         labs(title = "Ethnicity of Ecuadorian Youth by Urban and Rural Population", 
              subtitle = "\nYouth corresponds with respondents in the age group 22 - 24 years old. Ethnicity is self-reported.\n", 
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
@@ -49,7 +49,7 @@ histgen <- ggplot(dat1, aes(years.in.education, fill = gender)) +
         labs(y = "Percent", fill="Gender") +
         scale_y_continuous(labels=scales::percent) +
         facet_wrap(.~survey.date) + theme_bw() +
-        scale_fill_manual(values=c("#32CD32", "#9400D3")) + 
+        scale_fill_manual(values=c("#9EDAAC", "#9577BC")) + 
         labs(title = "Years Ecuadorian youth completed in all levels of education by gender and year", 
              subtitle = "Youth corresponds with respondents in the age group 22 - 24 years old.", 
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
@@ -123,7 +123,7 @@ histaregen <- ggplot(data = dat2, aes(years.in.education, fill = gender)) +
         geom_bar(position = "dodge", aes(y = ..prop..), alpha = 3.5/5) + 
         facet_grid(current.address.area~survey.date)  + 
         scale_y_continuous(labels=scales::percent)  +
-        scale_fill_manual(values=c("#32CD32", "#9400D3")) + 
+        scale_fill_manual(values=c("#9EDAAC", "#9577BC")) + 
         labs(title = "Number of years Ecuadorian young adults completed \n in all levels of education by gender and year", 
              subtitle = "\n Young adults refers to respondents in the age group 22 - 25 years old. The \n final school years in 2007 correspond with the old school system, 'Sistema \n Anterior'. The final school years in 2019 correspond with the new school \n system, 'Sistema Actual Reforma Curricular'.",
              caption = "Source: ENEMDU surveys collected by INEC from Dec. 2007 to Sept. 2019") +
