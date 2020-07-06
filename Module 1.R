@@ -49,12 +49,13 @@ addcolNA <- function(x, pattern) {
 }
 
 dat1 <- lapply(dat0, addcolNA, pattern = "ciudad")
+dat2 <- lapply(dat1, addcolNA, pattern = "pobreza")
 
 ## METHOD: Select columns of interest and bind datasets. 
 
 dat1 <- lapply(dat1, select, survey.location, ciudad, p03, p15,  
                p16a, p16b, p17a, p17b, p10a, p10b, p07, p12a,  
-               date, p09, p02)
+               date, p09, p02, pobreza)
 
 dat2 <- do.call(rbind, dat1)
 remove(dat0)
@@ -184,24 +185,20 @@ dat4 <- rbind(a, b)
 
 dat4$prior.address.abroad[dat4$ever.moved == "no"] <- "no"
 
-## METHOD: set prior.address.abraod to "no" if higher.education.level
+## METHOD: set prior.address.abraod to "no" if education.level
 ## equals "none". 
 
-dat4$obtained.degree[dat4$higher.education.level == "none"] <- "no"
-
-## METHOD: remove NA.values
-dat4 <- dat4 %>%
-        na.omit
-remove(dat3)
+dat4$obtained.degree[as.integer(dat4$education.level) < 8] <- "no"
+remove(dat3, a, b)
 
 
 ## ----------------------------------------------------------------##
 ## GOAL: order columns in an intuitive way.
 
-dat5 <- dat4[, c(13, 3, 15, 4, 2, 1, 5, 6, 7, 8, 9, 10, 16, 11, 14, 12)]
+dat5 <- dat4[, c(13, 3, 15, 16, 4, 2, 1, 5, 6, 7, 8, 9, 10, 16, 11, 14, 12)]
 remove(dat4)
 
 ## ----------------------------------------------------------------##
 ## Save data
-saveRDS(dat3, "clean_data_survey.rds")
+saveRDS(dat5, "clean_data_survey.rds")
 rm(list = ls())
