@@ -104,23 +104,23 @@ remove(dat0)
 
 ## METHOD: Specify factor variables according to surveys and codebook. Levels
 ## with values c(1,2) are converted to c(0,1) to make regression computations
-## posible and clear. Unless otherwise stated, 0 stands for: urban; yes; male
-## and 1 stands for: rural; no; female. 
+## posible and clear. Unless otherwise stated, 0 stands for: urban; no; male
+## and 1 stands for: rural; yes; female. 
 
 dat2 <- dat1 %>%
         
         mutate(current.address.area = ifelse(
                 current.address.area == 1, 0, 1)) %>%
         
-        mutate(obtained.degree = ifelse(obtained.degree == 1, 0, 1)) %>%
+        mutate(obtained.degree = ifelse(obtained.degree == 1, 1, 0)) %>%
         
-        mutate(ever.moved = ifelse(ever.moved == 2, 0, 1)) %>%
+        mutate(ever.moved = ifelse(ever.moved == 1, 0, 1)) %>%
         
         mutate(prior.address.abroad = ifelse(
                 prior.address.abroad == 1, 0, 1)) %>%
         
         mutate(currently.matriculated = ifelse(
-                currently.matriculated == 1, 0, 1)) %>%
+                currently.matriculated == 1, 1, 0)) %>%
         
         mutate(ethnicity = factor(ethnicity, levels = 1:8, 
                                   labels = c("indigenous","afroecuadorian",
@@ -149,20 +149,28 @@ dat2 <- dat1 %>%
                                           "lack of places at educational
                                           facilities", "other", "other",
                                           "other"))) 
+
+remove(dat1)
         
 
-dat2$gender <- factor(dat2$gender, levels = c(1,2), labels = c("male", "female"))
-
-## METHOD: Transform survey date into a time variable. 
-
-dat2 <- transform(dat2, survey.date = as.Date(survey.date))
-remove(dat1)
-
 ## ----------------------------------------------------------------##
-## GOAL: Add a variable calculating the minimum total years enrolled in education. 
-## First we assign the base years required for the highest level of education.
-## This is calculated through the Sistema Anterior, Sistema Actual Reforma
-## Curricular table in the 2019 survey.
+## GOAL: Add a variable calculating the minimum total years enrolled in 
+## education. 
+
+
+## METHOD: Calculate every years in education for undergraduate graduates.
+
+temp <- dat2 %>%
+        filter(obtained.degree == 1 & education.level == 9 &
+                       currently.matriculated == 0) 
+
+mean(temp$years.completed.highest.education.level)
+
+## METHOD: First we assign the base years required for the highest level of 
+## education. This is calculated through the Sistema Anterior, Sistema 
+## Actual Reforma Curricular table in the 2019 survey. For postgraduate
+## students we assume 5 years of undergrad education, in line with the 
+## mean calculated above. 
 
 dat3 <- dat2
 dat3$years.in.education[dat3$education.level == 1] <- 0 
@@ -174,14 +182,22 @@ dat3$years.in.education[dat3$education.level == 6] <- 6
 dat3$years.in.education[dat3$education.level == 7] <- 10
 dat3$years.in.education[dat3$education.level == 8] <- 13
 dat3$years.in.education[dat3$education.level == 9] <- 13
-dat3$years.in.education[dat3$education.level == 10] <- 13
+dat3$years.in.education[dat3$education.level == 10] <- 13+5
 
-dat3$years.in.education <- dat3$years.in.education + dat3$years.completed.highest.education.level
+dat3$years.in.education <- dat3$years.in.education + 
+        dat3$years.completed.highest.education.level
+
 remove(dat2)
 
 
-splitfactor(dat2, ethnicity, drop.level = "mestizo")
+## ----------------------------------------------------------------##
+## GOAL: Add a variable indicating if the respondent ever enrolled in 
+## higher education.
 
+dat4 <- dat3 %>%
+        mutate(higher.education = ifelse(education.level > 7, 1, 0))
+
+remove(dat3)
 
 
 ## ----------------------------------------------------------------##
@@ -194,47 +210,52 @@ splitfactor(dat2, ethnicity, drop.level = "mestizo")
 ## equals "no". Replace prior.address.postcode with current.address.postcode. 
 ## Replace reason.for.migration with "none". 
 
-a <- dat3 %>%
-        filter(ever.moved == "no") %>%
+temp1 <- dat4 %>%
+        filter(ever.moved == 0) %>%
         mutate(time.at.current.address = age) %>%
         mutate(prior.address.postcode = current.address.postcode) 
 
-b <- dat3 %>%
-        filter(ever.moved == "yes" | is.na(ever.moved))
+temp2 <- dat4 %>%
+        filter(ever.moved == 1 | is.na(ever.moved))
 
-dat4 <- rbind(a, b)
+dat5 <- rbind(temp1, temp2)
 
 ## METHOD: set reason.for.not.matriculated to "none if 
 ## currently.matriculated equals "yes".
 
-a <- dat4 %>%
-        filter(currently.matriculated == "yes") %>%
+temp1 <- dat5 %>%
+        filter(currently.matriculated == 1) %>%
         mutate(reason.not.matriculated = "none")
 
-b <- dat4 %>%
-        filter(currently.matriculated == "no" | is.na(currently.matriculated))
+temp2 <- dat5 %>%
+        filter(currently.matriculated == 0 | is.na(currently.matriculated))
 
-dat4 <- rbind(a, b)
+dat5 <- rbind(temp1, temp2)
 
-## METHOD: set prior.address.abraod to "no" if ever.moved
+## METHOD: set prior.address.abroad to "no" if ever.moved
 ## equals "yes". 
 
-dat4$prior.address.abroad[dat4$ever.moved == "no"] <- "no"
+dat5$prior.address.abroad[dat4$ever.moved == 0] <- 0
 
-## METHOD: set prior.address.abraod to "no" if education.level
-## equals "none". 
+## METHOD: set obtained.degree to "no" if education.level
+## is below higher education. 
 
-dat4$obtained.degree[as.integer(dat4$education.level) < 8] <- "no"
-remove(dat3, a, b)
+dat5$obtained.degree[as.integer(dat4$education.level) < 8] <- 0
+
+remove(dat4, temp1, temp2)
 
 
 ## ----------------------------------------------------------------##
 ## GOAL: order columns in an intuitive way.
 
-dat5 <- dat4[, c(13, 3, 15, 16, 4, 2, 1, 5, 6, 7, 8, 9, 10, 16, 11, 14, 12)]
+dat6 <- dat5[, c(13, 3, 15, 4, 16, 2, 1, 5, 6, 7, 8, 9, 10, 16, 11, 14, 12)]
 remove(dat4)
 
 ## ----------------------------------------------------------------##
+
+
+
+splitfactor(dat2, ethnicity, drop.level = "mestizo")
 ## Save data
 saveRDS(dat5, "clean_data_survey.rds")
 rm(list = ls())
