@@ -27,66 +27,90 @@ namestolower <- function(x) {
 dat0 <- lapply(dat0, namestolower)
 
 
-## METHOD: create column of NA values if data not available in 
-## particular survey.
+## METHOD: test which data sets have all the variables of interest (some of 
+## the data sets have missing columns). 
 
-addcolNA <- function(x, pattern) {
+checkcols <- function(x, y) {
         
-        a <- names(x)
-        b <- length(x) + 1
+        incomplete.columns <- c()
         
-        if(sum(grepl(pattern, a)) < 1) {
+        counter <- 0
+        
+        for(j in 1:length(x)) {
                 
-                x <- x %>%
-                        mutate(new_col = NA) 
+                for(i in 1:length(y)) {
+                        
+                        if(sum(
+                                
+                                grep(y[i], names(x[[j]])))
+                           
+                           == 0)
+                                
+                        {
+                          
+                                message(paste("Column", y[i],
+                                            "missing in survey from", 
+                                            x[j][[1]]$date[1], 
+                                            "in list position",
+                                      j))
+                                
+                                counter <- counter + 1
+                                
+                                incomplete.columns[counter] <- j
+                                
+                        } 
+                        
+                }
                 
-                names(x)[b] <- pattern
-                
+        
         }
         
-        return(x)       
+        return(incomplete.columns)
         
 }
 
-dat1 <- lapply(dat0, addcolNA, pattern = "ciudad")
-dat2 <- lapply(dat1, addcolNA, pattern = "pobreza")
+colnames <- c("\\<ciudad\\>", "\\<p03\\>", "\\<p15\\>", "\\<p16a\\>", 
+              "\\<p16b\\>", "\\<p17a\\>", "\\<p17b\\>", "\\<p10a\\>", 
+              "\\<p10b\\>", "\\<p07\\>", "\\<p12a\\>", "\\<date\\>", 
+              "\\<p09\\>", "\\<p02\\>")
+
+
+position.inc.df <- checkcols(dat0, colnames)
+
 
 ## METHOD: Select columns of interest and bind datasets. 
 
-dat1 <- lapply(dat1, select, survey.location, ciudad, p03, p15,  
-               p16a, p16b, p17a, p17b, p10a, p10b, p07, p12a,  
-               date, p09, p02, pobreza)
+dat1 <- lapply(dat0[-position.inc.df], select, survey.location, ciudad, p03, 
+               p15, p16a, p16b, p17a, p17b, p10a, p10b, p07, p12a,  
+               date, p09, p02)
 
-dat2 <- do.call(rbind, dat1)
-remove(dat0)
+dat1 <- do.call(rbind, dat1)
 
 
-## ----------------------------------------------------------------##
-## GOAL: Clarify column names. 
+## METHOD: Clarify column names. 
 
-names(dat2) <- c("current.address.area", "current.address.postcode", "age", 
+names(dat1) <- c("current.address.area", "current.address.postcode", "age", 
                  "ethnicity", "ever.moved", "time.at.current.address", 
                  "prior.address.abroad", "prior.address.postcode", 
                  "education.level", "years.completed.highest.education.level", 
                  "currently.matriculated","obtained.degree", "survey.date", 
                  "reason.not.matriculated", "gender")
 
+remove(dat0)
+
 
 ## ----------------------------------------------------------------##
 ## GOAL: Specify variable class and levels for R. 
 
-## METHOD: Specify factor variables according to surveys and codebook. 
+## METHOD: Specify factor variables according to surveys and codebook. Levels
+## with values c(1,2) are converted to c(0,1) to make regression computations
+## posible and clear. 
 
-dat2$current.address.area <- factor(dat2$current.address.area, level = c(1,2),
-                                    labels = c("urban", "rural"))
+dat3 <- dat2 %>%
+        mutate(current.address.area = ifelse(
+                current.address.area == 1, 0, 1))
 
-dat2$education.level <- factor(dat2$education.level, 
-                                      levels = 1:10, labels = 
-                                              c("none", "centro de alfabetización", 
-                                                "jardín de infantes", "primaria",
-                                                "educación básica", "secundaría", "bachillerato", 
-                                                "superior no unversitario",
-                                                "superior universitario", "postgrado"))
+dat2$current.address.area <- ifelse(dat2$current.address.area, level = 1, 0, 1)
 
 dat2$obtained.degree <- factor(dat2$obtained.degree, levels = c(1,2), labels =
                                        c("yes", "no"))
@@ -106,7 +130,9 @@ dat2$currently.matriculated <- factor(dat2$currently.matriculated, levels =
 
 ## Some surveys only had 14 levels for the following variable, meaning 'other'
 ## was classified as level 14. To merge the data appropriately, the newly 
-## introduced levels are classified as 'other'. 
+## introduced levels are classified as 'other'.
+
+
 
 dat2$reason.not.matriculated <- factor(dat2$reason.not.matriculated, levels = 1:16,
                                        labels = c("age", "completed studies", "finances",
@@ -133,16 +159,16 @@ remove(dat1)
 ## Curricular table in the 2019 survey.
 
 dat3 <- dat2
-dat3$years.in.education[dat3$education.level == "none"] <- 0 
-dat3$years.in.education[dat3$education.level == "centro de alfabetización"] <- 0
-dat3$years.in.education[dat3$education.level == "jardín de infantes"] <- 0
-dat3$years.in.education[dat3$education.level == "primaria"] <- 1
-dat3$years.in.education[dat3$education.level == "educación básica"] <- 0
-dat3$years.in.education[dat3$education.level == "secundaría"] <- 6
-dat3$years.in.education[dat3$education.level == "bachillerato"] <- 10
-dat3$years.in.education[dat3$education.level == "superior no universitario"] <- 13
-dat3$years.in.education[dat3$education.level == "superior universitario"] <- 13
-dat3$years.in.education[dat3$education.level == "postgrado"] <- 13
+dat3$years.in.education[dat3$education.level == 1] <- 0 
+dat3$years.in.education[dat3$education.level == 2] <- 0
+dat3$years.in.education[dat3$education.level == 3] <- 0
+dat3$years.in.education[dat3$education.level == 4] <- 1
+dat3$years.in.education[dat3$education.level == 5] <- 0
+dat3$years.in.education[dat3$education.level == 6] <- 6
+dat3$years.in.education[dat3$education.level == 7] <- 10
+dat3$years.in.education[dat3$education.level == 8] <- 13
+dat3$years.in.education[dat3$education.level == 9] <- 13
+dat3$years.in.education[dat3$education.level == 10] <- 13
 
 dat3$years.in.education <- dat3$years.in.education + dat3$years.completed.highest.education.level
 remove(dat2)
