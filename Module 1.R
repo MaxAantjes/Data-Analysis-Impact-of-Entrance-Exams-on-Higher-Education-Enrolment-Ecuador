@@ -4,7 +4,7 @@
 ## ----------------------------------------------------------------##
 ## GOAL: load packages and data set. 
 library(pacman)
-pacman::p_load(dplyr, lubridate, cobalt)
+pacman::p_load(dplyr, tidyr, lubridate)
 
 dat0 <- readRDS("raw_data_survey.rds")
 
@@ -195,7 +195,8 @@ remove(dat2)
 ## higher education.
 
 dat4 <- dat3 %>%
-        mutate(higher.education = ifelse(education.level > 7, 1, 0))
+        mutate(ever.enrolled.in.higher.education = 
+                       ifelse(education.level > 7, 1, 0))
 
 remove(dat3)
 
@@ -242,20 +243,21 @@ dat5$prior.address.abroad[dat4$ever.moved == 0] <- 0
 
 dat5$obtained.degree[as.integer(dat4$education.level) < 8] <- 0
 
+## METHOD: Remove remaining NA values. 
+dat5 <- dat5 %>%
+        drop_na()
+
 remove(dat4, temp1, temp2)
 
 
 ## ----------------------------------------------------------------##
 ## GOAL: order columns in an intuitive way.
 
-dat6 <- dat5[, c(13, 3, 15, 4, 16, 2, 1, 5, 6, 7, 8, 9, 10, 16, 11, 14, 12)]
-remove(dat4)
+dat6 <- dat5[, c(13, 3, 15, 4, 16, 17, 2, 1, 5, 6, 7, 8, 9, 10, 16, 11, 14, 12)]
+remove(dat5)
+
 
 ## ----------------------------------------------------------------##
-
-
-
-splitfactor(dat2, ethnicity, drop.level = "mestizo")
 ## Save data
 saveRDS(dat5, "clean_data_survey.rds")
 rm(list = ls())
