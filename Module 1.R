@@ -4,7 +4,7 @@
 ## ----------------------------------------------------------------##
 ## GOAL: load packages and data set. 
 library(pacman)
-pacman::p_load(dplyr, lubridate)
+pacman::p_load(dplyr, lubridate, cobalt)
 
 dat0 <- readRDS("raw_data_survey.rds")
 
@@ -75,13 +75,13 @@ colnames <- c("\\<ciudad\\>", "\\<p03\\>", "\\<p15\\>", "\\<p16a\\>",
               "\\<p09\\>", "\\<p02\\>")
 
 
-position.inc.df <- checkcols(dat0, colnames)
+position.incomplete.df <- checkcols(dat0, colnames)
 
 
 ## METHOD: Select columns of interest and bind datasets. 
 
-dat1 <- lapply(dat0[-position.inc.df], select, survey.location, ciudad, p03, 
-               p15, p16a, p16b, p17a, p17b, p10a, p10b, p07, p12a,  
+dat1 <- lapply(dat0[-position.incomplete.df], select, survey.location, ciudad,
+               p03, p15, p16a, p16b, p17a, p17b, p10a, p10b, p07, p12a,  
                date, p09, p02)
 
 dat1 <- do.call(rbind, dat1)
@@ -104,46 +104,52 @@ remove(dat0)
 
 ## METHOD: Specify factor variables according to surveys and codebook. Levels
 ## with values c(1,2) are converted to c(0,1) to make regression computations
-## posible and clear. 
+## posible and clear. Unless otherwise stated, 0 stands for: urban; yes; male
+## and 1 stands for: rural; no; female. 
 
-dat3 <- dat2 %>%
+dat2 <- dat1 %>%
+        
         mutate(current.address.area = ifelse(
-                current.address.area == 1, 0, 1))
-
-dat2$current.address.area <- ifelse(dat2$current.address.area, level = 1, 0, 1)
-
-dat2$obtained.degree <- factor(dat2$obtained.degree, levels = c(1,2), labels =
-                                       c("yes", "no"))
-
-dat2$ever.moved <- factor(dat2$ever.moved, levels = c(2,1),
-                          labels = c("yes", "no"))
-
-dat2$prior.address.abroad <- factor(dat2$prior.address.abroad, levels = 
-                                            c(1,2), labels = c("no","yes"))
-dat2$ethnicity <- factor(dat2$ethnicity, levels = 1:8, labels = c("indigenous",
-                                                                  "afroecuadorian", "black", "mulatto",
-                                                                  "montubio", "mestizo", "white", "other"))
-
-dat2$currently.matriculated <- factor(dat2$currently.matriculated, levels =
-                                              c(1,2), labels = c("yes", "no"))
-
+                current.address.area == 1, 0, 1)) %>%
+        
+        mutate(obtained.degree = ifelse(obtained.degree == 1, 0, 1)) %>%
+        
+        mutate(ever.moved = ifelse(ever.moved == 2, 0, 1)) %>%
+        
+        mutate(prior.address.abroad = ifelse(
+                prior.address.abroad == 1, 0, 1)) %>%
+        
+        mutate(currently.matriculated = ifelse(
+                currently.matriculated == 1, 0, 1)) %>%
+        
+        mutate(ethnicity = factor(ethnicity, levels = 1:8, 
+                                  labels = c("indigenous","afroecuadorian",
+                                             "black", "mulatto","montubio",
+                                             "mestizo", "white", "other"))) %>%
+        
+        mutate(gender = ifelse(gender == 1, 0, 1)) %>%
+        
+        mutate(survey.date = as.Date(survey.date, format = "%Y-%m-%d")) %>%
 
 ## Some surveys only had 14 levels for the following variable, meaning 'other'
 ## was classified as level 14. To merge the data appropriately, the newly 
 ## introduced levels are classified as 'other'.
 
-
-
-dat2$reason.not.matriculated <- factor(dat2$reason.not.matriculated, levels = 1:16,
-                                       labels = c("age", "completed studies", "finances",
-                                                  "poor academic performance", "for work", 
-                                                  "leveling SENECYT",
-                                                  "illness", "for house work",
-                                                  "family prohibition", 
-                                                  "lack of educational facilities",
-                                                  "lack of interest", "embarrassment", 
-                                                  "lack of places at educational facilities",
-                                                  "other", "other", "other"))
+        mutate(reason.not.matriculated = 
+                       factor(
+                               reason.not.matriculated, levels = 1:16,
+                               labels = c("age", "completed studies", 
+                                          "finances",
+                                          "poor academic performance", 
+                                          "for work", "leveling SENECYT",
+                                          "illness", "for house work",
+                                          "family prohibition", 
+                                          "lack of educational facilities",
+                                          "lack of interest", "embarrassment",
+                                          "lack of places at educational
+                                          facilities", "other", "other",
+                                          "other"))) 
+        
 
 dat2$gender <- factor(dat2$gender, levels = c(1,2), labels = c("male", "female"))
 
@@ -172,6 +178,10 @@ dat3$years.in.education[dat3$education.level == 10] <- 13
 
 dat3$years.in.education <- dat3$years.in.education + dat3$years.completed.highest.education.level
 remove(dat2)
+
+
+splitfactor(dat2, ethnicity, drop.level = "mestizo")
+
 
 
 ## ----------------------------------------------------------------##
