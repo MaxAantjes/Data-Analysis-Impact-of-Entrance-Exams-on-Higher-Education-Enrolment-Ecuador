@@ -72,7 +72,7 @@ checkcols <- function(x, y) {
 colnames <- c("\\<ciudad\\>", "\\<p03\\>", "\\<p15\\>", "\\<p16a\\>", 
               "\\<p16b\\>", "\\<p17a\\>", "\\<p17b\\>", "\\<p10a\\>", 
               "\\<p10b\\>", "\\<p07\\>", "\\<p12a\\>", "\\<date\\>", 
-              "\\<p09\\>", "\\<p02\\>")
+              "\\<p09\\>", "\\<p02\\>", "\\<pobreza\\>")
 
 
 position.incomplete.df <- checkcols(dat0, colnames)
@@ -82,7 +82,7 @@ position.incomplete.df <- checkcols(dat0, colnames)
 
 dat1 <- lapply(dat0[-position.incomplete.df], select, survey.location, ciudad,
                p03, p15, p16a, p16b, p17a, p17b, p10a, p10b, p07, p12a,  
-               date, p09, p02)
+               date, p09, p02, pobreza)
 
 dat1 <- do.call(rbind, dat1)
 
@@ -94,7 +94,7 @@ names(dat1) <- c("current.address.area", "current.address.postcode", "age",
                  "prior.address.abroad", "prior.address.postcode", 
                  "education.level", "years.completed.highest.education.level", 
                  "currently.matriculated","obtained.degree", "survey.date", 
-                 "reason.not.matriculated", "gender")
+                 "reason.not.matriculated", "gender", "in.poverty")
 
 remove(dat0)
 
@@ -104,8 +104,8 @@ remove(dat0)
 
 ## METHOD: Specify factor variables according to surveys and codebook. Levels
 ## with values c(1,2) are converted to c(0,1) to make regression computations
-## posible and clear. Unless otherwise stated, 0 stands for: urban; no; male
-## and 1 stands for: rural; yes; female. 
+## posible and clear. Unless otherwise stated, 0 stands for: urban; no; female
+## and 1 stands for: rural; yes; male. 
 
 dat2 <- dat1 %>%
         
@@ -122,12 +122,9 @@ dat2 <- dat1 %>%
         mutate(currently.matriculated = ifelse(
                 currently.matriculated == 1, 1, 0)) %>%
         
-        mutate(ethnicity = factor(ethnicity, levels = 1:8, 
-                                  labels = c("indigenous","afroecuadorian",
-                                             "black", "mulatto","montubio",
-                                             "mestizo", "white", "other"))) %>%
+        mutate(vulnerable.ethnicity = ifelse(ethnicity %in% 1:5, 1, 0)) %>%
         
-        mutate(gender = ifelse(gender == 1, 0, 1)) %>%
+        mutate(gender = ifelse(gender == 1, 1, 0)) %>%
         
         mutate(survey.date = as.Date(survey.date, format = "%Y-%m-%d")) %>%
 
@@ -253,11 +250,13 @@ remove(dat4, temp1, temp2)
 ## ----------------------------------------------------------------##
 ## GOAL: order columns in an intuitive way.
 
-dat6 <- dat5[, c(13, 3, 15, 4, 16, 17, 2, 1, 5, 6, 7, 8, 9, 10, 16, 11, 14, 12)]
+dat6 <- dat5[, c(13, 3, 15, 4, 16, 17, 18, 19, 2, 1, 5, 6, 7, 8, 9, 10, 11, 14, 
+                 12)]
+
 remove(dat5)
 
 
 ## ----------------------------------------------------------------##
 ## Save data
-saveRDS(dat5, "clean_data_survey.rds")
+saveRDS(dat6, "clean_data_survey.rds")
 rm(list = ls())
