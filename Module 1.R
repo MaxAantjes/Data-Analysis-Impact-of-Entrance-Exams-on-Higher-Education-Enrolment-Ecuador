@@ -34,9 +34,9 @@ checkcols <- function(x, y) {
         
         incomplete.columns <- c()
         
-        counter <- 0
-        
         for(j in 1:length(x)) {
+                
+                counter <- 0
                 
                 for(i in 1:length(y)) {
                         
@@ -56,16 +56,20 @@ checkcols <- function(x, y) {
                                 
                                 counter <- counter + 1
                                 
-                                incomplete.columns[counter] <- j
-                                
                         } 
+                        
+                        if(counter > 0) {
+                        
+                        incomplete.columns[j] <- j
+                        
+                        }
                         
                 }
                 
         
         }
         
-        return(incomplete.columns)
+        return(incomplete.columns[!is.na(incomplete.columns)])
         
 }
 
