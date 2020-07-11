@@ -139,9 +139,9 @@ remove(coast.names)
 
 canton.codes <- unlist(
         str_extract_all(
-                pdf0, "[0-9]{4}(?:cantón|cantòn)\\s*(.*)\\s*(?:\r\n[0-9]\r\nc|\r\n[0-9]{2}\r\nc|c)omprende"))
+                pdf0, "[0-9]{4}(?:cantón|cantòn|..cantón)\\s*(.*)\\s*(?:\r\n[0-9]\r\nc|\r\n[0-9]{2}\r\nc|c)omprende"))
 
-canton.codes <- gsub(pattern = "(?:cantón|cantòn)", 
+canton.codes <- gsub(pattern = "(?:cantón|cantòn|[^0-9][^0-9]cantón)", 
                      replacement = "-", canton.codes)
 canton.codes <- gsub(pattern = "(?:\r\ncomprende|\r\n[0-9]\r\ncomprende|\r\n[0-9]{2}\r\ncomprende)", replacement = "", canton.codes)
 df.canton <- data.frame(str_split_fixed(canton.codes, pattern = "-", 2))
@@ -162,6 +162,11 @@ dat0 <- df.codes %>%
         left_join(df.canton, by = "cantoncode") %>%
         select(1, 2, 5, 3, 7, 4, 5, 6)
 
+## METHOD: check for missing values.
+
+unique(dat0$cantoncode[is.na(dat0$cantonname)])
+unique(dat0$provincecode[is.na(dat0$provincename)])
+unique(dat0$postcode[is.na(dat0$area)])
 
 
 ## ----------------------------------------------------------------##
