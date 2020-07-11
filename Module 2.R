@@ -5,7 +5,7 @@
 ## ----------------------------------------------------------------##
 ## GOAL: load packages. 
 library(pacman)
-pacman::p_load(pdftools,stringr)
+pacman::p_load(pdftools,stringr,tidyverse)
 
 
 ## ----------------------------------------------------------------##
@@ -43,6 +43,7 @@ temp1 <- str_split_fixed(temp1, "-", 3)
 ## METHOD: combine the two dataframes into one.
 df.codes <- cbind(df.codes, temp1)
 names(df.codes) <- c("postcode", "provincecode", "cantoncode", "parroquiacode")
+remove(temp1)
 
 
 ## ----------------------------------------------------------------##
@@ -93,38 +94,35 @@ names(rural.codes) <- "postcodes"
 rural.codes <- mutate(rural.codes, area = 1)
 names(urban.codes) <- "postcodes"
 urban.codes <- mutate(urban.codes, area = 0)
-dat.area <- rbind(rural.codes, urban.codes)
+df.area <- rbind(rural.codes, urban.codes)
 
 remove(new, original, rural.list, pdf1, rural.text, urban.text, rural.codes, 
        urban.codes)
 
 
 ## ----------------------------------------------------------------##
-## GOAL: create a dataframe which matches each postal code to the area (rural/
-## urban.
+## GOAL: create a dataframe which matches each postal code to the region
+## (coast or highlands)
 
 ## METHOD: Create a vector of the codes of coastal provinces based on 
 ## https://es.wikipedia.org/wiki/Regi%C3%B3n_Costa#Divisi%C3%B3n_pol%C3%ADtica
 
-prov.codes <- unlist(str_extract_all(pdf0, "[0-9][0-9]provincia\\s*(.*)\\s*comprende"))
-coast.names <- list("eloro", "esmeraldas", "guayas", "losríos", "manabí", "santaelena",
-                  "santodomingodelostsáchilas")
-coast.codes <- sapply(coast.names, grep, x = prov.codes, value = TRUE)
-coast.codes <- unlist(str_extract_all(coast.codes, "[0-9][0-9]"))
+df.region <- data.frame(
+        unlist(str_extract_all(pdf0, 
+                               "[0-9]{2}provincia\\s*(.*)\\s*comprende")))
+names(df.region) <- "temp"
 
-## METHOD: Create region variable which indicates coastal/ highlands
-## identification for each postcode. At this stage we will filter out
-## codes starting with 90, as these are (according to the pdf file, p. 49)
-## under observation and unclassified. The reason for this seems to stem
-## from a variety of political deciosions. (https://en.wikipedia.org/wiki/Provinces_of_Ecuador).
-## 1 indicates highlands. 2 indicates coast. 
+coast.names <- c("eloro", "esmeraldas", "guayas", "losríos", "manabí", 
+                 "santaelena", "santodomingodelostsáchilas")
 
-dat2 <- dat1 %>%
-        mutate(region = str_extract_all(dat1$postcodes, "^[0-9][0-9]")) %>%
-        filter(!region == "90") %>%
-        mutate(region = ifelse(region %in% coast.codes, 
-                                         1, 0))
-remove(dat1, prov.codes, coast.names, coast.codes)
+df.region <- df.region %>%
+        mutate(provincename = gsub(
+        "[0-9]{2}provincia(?:de|del)(\\s*(.*)\\s*)\r\ncomprende", "\\1",
+               temp)) %>%
+        mutate(provincecode = str_extract(temp, "^[0-9]{2}")) %>%
+        mutate(region = ifelse(provincename %in% coast.names, 1, 0)) %>%
+        select(-temp)
+
 
 ## GOAL: Create a dataframe matching postal codes with canton name.
 
@@ -134,7 +132,7 @@ remove(dat1, prov.codes, coast.names, coast.codes)
 
 canton.codes <- unlist(
         str_extract_all(pdf0, 
-                        "[0-9][0-9][0-9][0-9]cantón\\s*(.*)\\s*comprende"))
+                        "[0-9]{4}cantón\\s*(.*)\\s*comprende"))
 
 canton.codes <- gsub(pattern = "cantón", replacement = "-", canton.codes)
 canton.codes <- gsub(pattern = "\r\ncomprende", replacement = "", canton.codes)
