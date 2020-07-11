@@ -86,9 +86,9 @@ urban.text <- pdf1[[1]][-rural.list]
 ## METHOD: Extract the codes from each list and store them 
 ## into a dataframe. 1 indicates urban. 2 indicates rural. 
 rural.codes <- data.frame(unique(unlist(str_extract_all(rural.text, 
-                               "[0-9][0-9][0-9][0-9][0-9][0-9]"))))
+                               "[0-9]{6}"))))
 urban.codes <- data.frame(unique(unlist(str_extract_all(urban.text, 
-                                "[0-9][0-9][0-9][0-9][0-9][0-9]"))))
+                                "[0-9]{6}"))))
 
 names(rural.codes) <- "postcode"
 rural.codes <- mutate(rural.codes, area = 1)
@@ -117,13 +117,14 @@ coast.names <- c("eloro", "esmeraldas", "guayas", "losríos", "manabí",
 
 df.region <- data.frame(
         unlist(str_extract_all(pdf0, 
-                               "[0-9]{2}provincia\\s*(.*)\\s*comprende")))
+                               "[0-9]{2}provincia\\s*(.*)\\s*(?:\r\n20\r\ncomprende|comprende)")))
+
 names(df.region) <- "temp"
 
 df.region <- df.region %>%
-        mutate(provincename = gsub(
-        "[0-9]{2}provincia(?:de|del)(\\s*(.*)\\s*)\r\ncomprende", "\\1",
-               temp)) %>%
+        mutate(provincename = change_name(temp,
+        c("[0-9]{2}provincia(?:de|del)(\\s*(.*)\\s*)", 
+        "(?:\r\n20\r\ncomprende|\r\ncomprende)"), c("\\1", ""))) %>%
         mutate(provincecode = str_extract(temp, "^[0-9]{2}")) %>%
         mutate(region = ifelse(provincename %in% coast.names, 1, 0)) %>%
         select(-temp)
@@ -141,7 +142,7 @@ canton.codes <- unlist(
         str_extract_all(
                 pdf0, "[0-9]{4}(?:cantón|cantòn|..cantón)\\s*(.*)\\s*(?:\r\n[0-9]\r\nc|\r\n[0-9]{2}\r\nc|c)omprende"))
 
-canton.codes <- gsub(pattern = "(?:cantón|cantòn|[^0-9][^0-9]cantón)", 
+canton.codes <- gsub(pattern = "(?:cantón|cantòn|..canton)", 
                      replacement = "-", canton.codes)
 canton.codes <- gsub(pattern = "(?:\r\ncomprende|\r\n[0-9]\r\ncomprende|\r\n[0-9]{2}\r\ncomprende)", replacement = "", canton.codes)
 df.canton <- data.frame(str_split_fixed(canton.codes, pattern = "-", 2))
