@@ -10,12 +10,13 @@ pacman::p_load(pdftools,stringr,tidyverse)
 
 ## ----------------------------------------------------------------##
 ## GOAL: download raw data.  
-
+url <- "https://aplicaciones2.ecuadorencifras.gob.ec/SIN/descargas/cge2019.pdf"
 td = tempdir()
 temp = tempfile(tmpdir=td, fileext=".pdf")
-download.file("https://aplicaciones2.ecuadorencifras.gob.ec/SIN/descargas/cge2019.pdf",temp, mode = "wb")
+download.file(url,temp, mode = "wb")
 pdf0 <- pdf_text(temp)
 unlink(temp)
+remove(url)
 
 
 ## ----------------------------------------------------------------##
@@ -137,15 +138,15 @@ remove(coast.names)
 ## temporary dataframe. 
 
 canton.codes <- unlist(
-        str_extract_all(pdf0, 
-                        "[0-9]{4}cantón\\s*(.*)\\s*comprende"))
+        str_extract_all(
+                pdf0, "[0-9]{4}cantón\\s*(.*)\\s*(?:\r\n[0-9]\r\nc|\r\n[0-9]{2}\r\nc|c)omprende"))
 
 canton.codes <- gsub(pattern = "cantón", replacement = "-", canton.codes)
-canton.codes <- gsub(pattern = "\r\ncomprende", replacement = "", canton.codes)
+canton.codes <- gsub(pattern = "(?:\r\ncomprende|\r\n[0-9]\r\ncomprende|\r\n[0-9]{2}\r\ncomprende)", replacement = "", canton.codes)
 df.canton <- data.frame(str_split_fixed(canton.codes, pattern = "-", 2))
 
 ## METHOD: Clean up dataframe names. 
-names(df.canton) <- c("cantoncode", "canton.name")
+names(df.canton) <- c("cantoncode", "cantonname")
 remove(canton.codes)
 
 
@@ -157,7 +158,8 @@ remove(canton.codes)
 dat0 <- df.codes %>%
         left_join(df.area, by = "postcode") %>%
         left_join(df.region, by = "provincecode") %>%
-        left_join(df.canton, by = "cantoncode")
+        left_join(df.canton, by = "cantoncode") %>%
+        select(1, 2, 5, 3, 7, 4, 5, 6)
 
 
 
