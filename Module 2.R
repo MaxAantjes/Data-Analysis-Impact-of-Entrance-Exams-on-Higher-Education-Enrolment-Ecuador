@@ -84,7 +84,7 @@ rural.text <- pdf1[[1]][rural.list]
 urban.text <- pdf1[[1]][-rural.list]
 
 ## METHOD: Extract the codes from each list and store them 
-## into a dataframe. 1 indicates urban. 2 indicates rural. 
+## into a dataframe with variable area (1 = rural, 0 = urban). 
 rural.codes <- data.frame(unique(unlist(str_extract_all(rural.text, 
                                "[0-9]{6}"))))
 urban.codes <- data.frame(unique(unlist(str_extract_all(urban.text, 
@@ -113,7 +113,7 @@ coast.names <- c("eloro", "esmeraldas", "guayas", "losríos", "manabí",
 ## METHOD: Create a dataframe of strings with information on each province and
 ## province code. Then, split strings and check for matches with coast.names
 ## vector to create a three variable dataframe (provincename, provincecode and
-## region)
+## region (0 = highlands, 1 = coastal)).
 
 df.region <- data.frame(
         unlist(str_extract_all(pdf0, 
@@ -169,17 +169,13 @@ unique(dat0$cantoncode[is.na(dat0$cantonname)])
 unique(dat0$provincecode[is.na(dat0$provincename)])
 unique(dat0$postcode[is.na(dat0$area)])
 
+## RESULTS: Only postcodes starting with 90 were unclassified. The reason for
+## this is that they are under observation and not assigned any province
+## (accordign to the pdf file, p.49). This is reflected  a variety of political
+## decisions leading to "non-delimited" areas. (see: 
+## https://en.wikipedia.org/wiki/Provinces_of_Ecuador).
 
 ## ----------------------------------------------------------------##
 ## GOAL: Save data. 
 saveRDS(dat0, file = "postcode_classification.rds")
 rm(list = ls())
-
-
-
-## METHOD: Create region variable which indicates coastal/ highlands
-## identification for each postcode. At this stage we will filter out
-## codes starting with 90, as these are (according to the pdf file, p. 49)
-## under observation and unclassified. The reason for this seems to stem
-## from a variety of political deciosions. (https://en.wikipedia.org/wiki/Provinces_of_Ecuador).
-## 1 indicates highlands. 2 indicates coast. 
