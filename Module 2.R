@@ -36,13 +36,12 @@ df.codes <- data.frame(str_extract_all(pdf0, "[0-9]{6}"))
 
 ## METHOD: Add seperator between codes and split the codes into new variables. 
 
-temp1 <- gsub("([0-9]{2})([0-9]{2})([0-9]{2})", "\\1-\\2-\\3", 
-                      df.codes[, 1])
-temp1 <- str_split_fixed(temp1, "-", 3)
+provincecode <- unlist(str_extract_all(df.codes[,1], "^[0-9]{2}"))
+cantoncode <- unlist(str_extract_all(df.codes[,1], "^[0-9]{4}"))
 
 ## METHOD: combine the two dataframes into one.
-df.codes <- cbind(df.codes, temp1)
-names(df.codes) <- c("postcode", "provincecode", "cantoncode", "parroquiacode")
+df.codes <- cbind(df.codes, provincecode, cantoncode)
+names(df.codes) <- c("postcode", "provincecode", "cantoncode")
 remove(temp1)
 
 
@@ -90,9 +89,9 @@ rural.codes <- data.frame(unique(unlist(str_extract_all(rural.text,
 urban.codes <- data.frame(unique(unlist(str_extract_all(urban.text, 
                                 "[0-9][0-9][0-9][0-9][0-9][0-9]"))))
 
-names(rural.codes) <- "postcodes"
+names(rural.codes) <- "postcode"
 rural.codes <- mutate(rural.codes, area = 1)
-names(urban.codes) <- "postcodes"
+names(urban.codes) <- "postcode"
 urban.codes <- mutate(urban.codes, area = 0)
 df.area <- rbind(rural.codes, urban.codes)
 
@@ -146,8 +145,20 @@ canton.codes <- gsub(pattern = "\r\ncomprende", replacement = "", canton.codes)
 df.canton <- data.frame(str_split_fixed(canton.codes, pattern = "-", 2))
 
 ## METHOD: Clean up dataframe names. 
-names(df.canton) <- c("code", "canton.name")
+names(df.canton) <- c("cantoncode", "canton.name")
 remove(canton.codes)
+
+
+## ----------------------------------------------------------------##
+## GOAL: merge all dataframes together
+
+## METHOD: utilise merge function. 
+
+dat0 <- df.codes %>%
+        left_join(df.area, by = "postcode") %>%
+        left_join(df.region, by = "provincecode") %>%
+        left_join(df.canton, by = "cantoncode")
+
 
 
 ## ----------------------------------------------------------------##
