@@ -25,8 +25,29 @@ pdf0 <- tolower(paste(pdf0, collapse =""))
 pdf0 <- gsub(" ", "", pdf0)
 
 
+## ----------------------------------------------------------------## 
+## GOAL: Create data frame (df.codes) of all postal codes in Ecuador, with
+## additional columns of separated codes (provincial level, canton level, 
+## parroquia level)
+
+## METHOD: Extract all codes from pdf file.
+
+df.codes <- data.frame(str_extract_all(pdf0, "[0-9]{6}"))
+
+## METHOD: Add seperator between codes and split the codes into new variables. 
+
+temp1 <- gsub("([0-9]{2})([0-9]{2})([0-9]{2})", "\\1-\\2-\\3", 
+                      df.codes[, 1])
+temp1 <- str_split_fixed(temp1, "-", 3)
+
+## METHOD: combine the two dataframes into one.
+df.codes <- cbind(df.codes, temp1)
+names(df.codes) <- c("postcode", "provincecode", "cantoncode", "parroquiacode")
+
+
 ## ----------------------------------------------------------------##
-## GOAL: Create data frame of postal codes and urban/rural division. 
+## GOAL: Create data frame (dat.area) of postal codes matched with urban or 
+## rural area. 
 
 ## METHOD: Load useful function to change text according to pattern. 
 
@@ -72,12 +93,15 @@ names(rural.codes) <- "postcodes"
 rural.codes <- mutate(rural.codes, area = 1)
 names(urban.codes) <- "postcodes"
 urban.codes <- mutate(urban.codes, area = 0)
-dat1 <- rbind(rural.codes, urban.codes)
-remove(new, original, rural.list, pdf1, rural.text, urban.text, rural.codes, urban.codes)
+dat.area <- rbind(rural.codes, urban.codes)
+
+remove(new, original, rural.list, pdf1, rural.text, urban.text, rural.codes, 
+       urban.codes)
 
 
 ## ----------------------------------------------------------------##
-## GOAL: Add a variable for each postal codes and coastal/ highlands division.
+## GOAL: create a dataframe which matches each postal code to the area (rural/
+## urban.
 
 ## METHOD: Create a vector of the codes of coastal provinces based on 
 ## https://es.wikipedia.org/wiki/Regi%C3%B3n_Costa#Divisi%C3%B3n_pol%C3%ADtica
