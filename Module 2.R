@@ -107,13 +107,18 @@ remove(new, original, rural.list, pdf1, rural.text, urban.text, rural.codes,
 ## METHOD: Create a vector of the codes of coastal provinces based on 
 ## https://es.wikipedia.org/wiki/Regi%C3%B3n_Costa#Divisi%C3%B3n_pol%C3%ADtica
 
+coast.names <- c("eloro", "esmeraldas", "guayas", "losríos", "manabí", 
+                 "santaelena", "santodomingodelostsáchilas")
+
+## METHOD: Create a dataframe of strings with information on each province and
+## province code. Then, split strings and check for matches with coast.names
+## vector to create a three variable dataframe (provincename, provincecode and
+## region)
+
 df.region <- data.frame(
         unlist(str_extract_all(pdf0, 
                                "[0-9]{2}provincia\\s*(.*)\\s*comprende")))
 names(df.region) <- "temp"
-
-coast.names <- c("eloro", "esmeraldas", "guayas", "losríos", "manabí", 
-                 "santaelena", "santodomingodelostsáchilas")
 
 df.region <- df.region %>%
         mutate(provincename = gsub(
@@ -122,6 +127,8 @@ df.region <- df.region %>%
         mutate(provincecode = str_extract(temp, "^[0-9]{2}")) %>%
         mutate(region = ifelse(provincename %in% coast.names, 1, 0)) %>%
         select(-temp)
+
+remove(coast.names)
 
 
 ## GOAL: Create a dataframe matching postal codes with canton name.
@@ -136,10 +143,11 @@ canton.codes <- unlist(
 
 canton.codes <- gsub(pattern = "cantón", replacement = "-", canton.codes)
 canton.codes <- gsub(pattern = "\r\ncomprende", replacement = "", canton.codes)
-canton.codes <- data.frame(str_split_fixed(canton.codes, pattern = "-", 2))
+df.canton <- data.frame(str_split_fixed(canton.codes, pattern = "-", 2))
 
 ## METHOD: Clean up dataframe names. 
-names(canton.codes) <- c("code", "canton.name")
+names(df.canton) <- c("code", "canton.name")
+remove(canton.codes)
 
 
 ## ----------------------------------------------------------------##
@@ -151,3 +159,12 @@ dat2$postcodes <- as.integer(dat2$postcodes)
 ## GOAL: Save data. 
 saveRDS(dat2, file = "clean_data_area_region.rds")
 rm(list = ls())
+
+
+
+## METHOD: Create region variable which indicates coastal/ highlands
+## identification for each postcode. At this stage we will filter out
+## codes starting with 90, as these are (according to the pdf file, p. 49)
+## under observation and unclassified. The reason for this seems to stem
+## from a variety of political deciosions. (https://en.wikipedia.org/wiki/Provinces_of_Ecuador).
+## 1 indicates highlands. 2 indicates coast. 
