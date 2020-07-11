@@ -66,7 +66,7 @@ change_name <- function(x, original, new) {
 ## METHOD: Change text according to pattern in order to demark
 ## the beginning and end of rural code lists. 
 
-original <- c("rural", "cantón", "zonasenestudio", "zonam")
+original <- c("rural", "(?:cantón|cantòn)", "zonasenestudio", "zonam")
 new <- c("splitsplitstartrural", "endruralsplitsplit",
          "endruralsplitsplit", "endruralsplitsplit")
 pdf1 <- change_name(pdf0, original,new)
@@ -139,9 +139,10 @@ remove(coast.names)
 
 canton.codes <- unlist(
         str_extract_all(
-                pdf0, "[0-9]{4}cantón\\s*(.*)\\s*(?:\r\n[0-9]\r\nc|\r\n[0-9]{2}\r\nc|c)omprende"))
+                pdf0, "[0-9]{4}(?:cantón|cantòn)\\s*(.*)\\s*(?:\r\n[0-9]\r\nc|\r\n[0-9]{2}\r\nc|c)omprende"))
 
-canton.codes <- gsub(pattern = "cantón", replacement = "-", canton.codes)
+canton.codes <- gsub(pattern = "(?:cantón|cantòn)", 
+                     replacement = "-", canton.codes)
 canton.codes <- gsub(pattern = "(?:\r\ncomprende|\r\n[0-9]\r\ncomprende|\r\n[0-9]{2}\r\ncomprende)", replacement = "", canton.codes)
 df.canton <- data.frame(str_split_fixed(canton.codes, pattern = "-", 2))
 
