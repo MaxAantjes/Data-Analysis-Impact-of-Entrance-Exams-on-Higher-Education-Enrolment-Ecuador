@@ -1,6 +1,7 @@
 ## This module generates a dataframe classifying each postcode
 ## in terms of rural/urban and coast/highlands. 
 
+
 ## ----------------------------------------------------------------##
 ## GOAL: load packages. 
 library(pacman)
@@ -68,9 +69,9 @@ urban.codes <- data.frame(unique(unlist(str_extract_all(urban.text,
                                 "[0-9][0-9][0-9][0-9][0-9][0-9]"))))
 
 names(rural.codes) <- "postcodes"
-rural.codes <- mutate(rural.codes, area = 2)
+rural.codes <- mutate(rural.codes, area = 1)
 names(urban.codes) <- "postcodes"
-urban.codes <- mutate(urban.codes, area = 1)
+urban.codes <- mutate(urban.codes, area = 0)
 dat1 <- rbind(rural.codes, urban.codes)
 remove(new, original, rural.list, pdf1, rural.text, urban.text, rural.codes, urban.codes)
 
@@ -98,8 +99,25 @@ dat2 <- dat1 %>%
         mutate(region = str_extract_all(dat1$postcodes, "^[0-9][0-9]")) %>%
         filter(!region == "90") %>%
         mutate(region = ifelse(region %in% coast.codes, 
-                                         2, 1))
+                                         1, 0))
 remove(dat1, prov.codes, coast.names, coast.codes)
+
+## GOAL: Create a dataframe matching postal codes with canton name.
+
+## METHOD: Extract postal codes with canton name from the pdf file, create
+## a seperator and then split the string based on the separator to create a
+## temporary dataframe. 
+
+canton.codes <- unlist(
+        str_extract_all(pdf0, 
+                        "[0-9][0-9][0-9][0-9]cantón\\s*(.*)\\s*comprende"))
+
+canton.codes <- gsub(pattern = "cantón", replacement = "-", canton.codes)
+canton.codes <- gsub(pattern = "\r\ncomprende", replacement = "", canton.codes)
+canton.codes <- data.frame(str_split_fixed(canton.codes, pattern = "-", 2))
+
+## METHOD: Clean up dataframe names. 
+names(canton.codes) <- c("code", "canton.name")
 
 
 ## ----------------------------------------------------------------##
