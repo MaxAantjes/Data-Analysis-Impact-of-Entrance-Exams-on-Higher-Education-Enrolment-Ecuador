@@ -142,7 +142,7 @@ canton.codes <- unlist(
         str_extract_all(
                 pdf0, "[0-9]{4}(?:cantón|cantòn|..cantón)\\s*(.*)\\s*(?:\r\n[0-9]\r\nc|\r\n[0-9]{2}\r\nc|c)omprende"))
 
-canton.codes <- gsub(pattern = "(?:cantón|cantòn|..canton)", 
+canton.codes <- gsub(pattern = "(?:cantón|cantòn|[^0-9]{2}cantón)", 
                      replacement = "-", canton.codes)
 canton.codes <- gsub(pattern = "(?:\r\ncomprende|\r\n[0-9]\r\ncomprende|\r\n[0-9]{2}\r\ncomprende)", replacement = "", canton.codes)
 df.canton <- data.frame(str_split_fixed(canton.codes, pattern = "-", 2))
@@ -171,13 +171,8 @@ unique(dat0$postcode[is.na(dat0$area)])
 
 
 ## ----------------------------------------------------------------##
-## GOAL: return codes as numeric vector
-dat2$postcodes <- as.integer(dat2$postcodes)
-
-
-## ----------------------------------------------------------------##
 ## GOAL: Save data. 
-saveRDS(dat2, file = "clean_data_area_region.rds")
+saveRDS(dat0, file = "postcode_classification.rds")
 rm(list = ls())
 
 
