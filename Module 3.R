@@ -4,7 +4,7 @@
 
 ## ----------------------------------------------------------------##
 ## GOAL: load packages.
-pacman::p_load(openxlsx, stringr, tidyverse)
+pacman::p_load(openxlsx, stringr, tidyverse, zoo)
 
 df0 <- readRDS("postcode_classification.rds")
 
@@ -87,3 +87,43 @@ places.canton <- places.canton %>%
         
 ## METHOD: merge data set with the postcode data set.
 df1 <- merge(df0, places.canton, by = "cantonname")
+
+
+## Next data set required will have to be downloaded manually, as the file has 
+## erroneously been saved as a 1993 Excel 5.0 file. The problems this generates
+## become evident from the following github conversation:
+## https://github.com/tidyverse/readxl/issues/618. Simply download the file 
+## available here:
+## https://www.ecuadorencifras.gob.ec/wp-content/plugins/download-monitor/download.php?id=324&force=1 
+## then save it as a csv file in your working directory under the name
+## population.csv. 
+
+dat0 <- read.csv("population.csv", skip = 10)
+dat1 <- dat0
+
+## check for mistakes in canton column.
+sum(!is.na(dat0$Nombre.del.Cantón[dat0$Nombre.del.Cantón == "Total"])) 
+
+## Replace mistakes and check.
+dat1 <- dat1 %>%
+        mutate(cantonname = ifelse(Nombre.del.Cantón == "Total", NA, 
+                                   Nombre.del.Cantón))
+sum(!is.na(dat1$Nombre.del.Cantón[dat1$cantonname == "Total"])) 
+
+## Fill missing values.
+dat1[dat1 == ""] <- NA
+dat1$cantonname[2:length(dat1$cantonname)] <- na.locf(dat1$cantonname)
+dat1$Nombre.de.la.Parroquia[2:length(dat1$Nombre.de.la.Parroquia)] <-
+        na.locf(dat1$Nombre.de.la.Parroquia)
+
+## Create dataframe with young adult population (20-29 y/o) per cantón. 
+dat2 <- dat1 %>%
+        mutate(subset1 = gsub(" ", "", Nombre.de.la.Parroquia)) %>%
+        mutate(subset2 = gsub(" ", "", ÁREA)) %>%
+        filter(subset1 == "Total" & subset2 == "Total") %>%
+        mutate(X.5 = gsub(",", "", X.5)) %>%
+        mutate(X.6 = gsub(",", "", X.6)) %>%
+        mutate(young.adult.population = as.integer(X.5) + as.integer(X.6)) %>%
+        mutate(cantonname = tolower(gsub(" ", "", cantonname))) %>%
+        select(cantonname, young.adult.population)
+        
