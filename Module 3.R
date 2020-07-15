@@ -101,12 +101,18 @@ df1 <- merge(df0, places.canton, by = "cantonname")
 dat0 <- read.csv("population.csv", skip = 10)
 dat1 <- dat0
 
-## check for mistakes in canton column.
+## check for the number of totals in theNombre.del.Cantón column, this should 
+## equal the number of provinces, 24. In these particular sections, the values 
+## in Nombre.de.la.Parroquia represent the different cantons. Finally, again 
+## within the same section, the 'total'value in the ÁREA column indicates the row 
+## gives the total population for  that particular canton. 
 sum(!is.na(dat0$Nombre.del.Cantón[dat0$Nombre.del.Cantón == "Total"])) 
+
+
 
 ## Replace mistakes and check.
 dat1 <- dat1 %>%
-        mutate(cantonname = ifelse(Nombre.del.Cantón == "Total", NA, 
+        mutate(cantonname = ifelse(Nombre.del.Cantón == "Total", "remove", 
                                    Nombre.del.Cantón))
 sum(!is.na(dat1$Nombre.del.Cantón[dat1$cantonname == "Total"])) 
 
@@ -120,10 +126,36 @@ dat1$Nombre.de.la.Parroquia[2:length(dat1$Nombre.de.la.Parroquia)] <-
 dat2 <- dat1 %>%
         mutate(subset1 = gsub(" ", "", Nombre.de.la.Parroquia)) %>%
         mutate(subset2 = gsub(" ", "", ÁREA)) %>%
+        filter(cantonname != "remove") %>%
         filter(subset1 == "Total" & subset2 == "Total") %>%
         mutate(X.5 = gsub(",", "", X.5)) %>%
         mutate(X.6 = gsub(",", "", X.6)) %>%
         mutate(young.adult.population = as.integer(X.5) + as.integer(X.6)) %>%
         mutate(cantonname = tolower(gsub(" ", "", cantonname))) %>%
         select(cantonname, young.adult.population)
-        
+
+## As it turns out the data is duplicated in the data set. After checking the
+## original excel document this turns out to be the case there too. We will now
+## check if the values of the duplicated data are equal for every canton.
+lapply(unique(dat2$cantonname), subset, x$z=dat2)
+
+subsetvector <- function(x,y,z){
+        a <- list()
+        for(i in 1:length(x)) {
+               a[[i]] <- subset(y, z == x[i])$young.adult.population} 
+        return(a)}
+
+test <- subsetvector(unique(dat2$cantonname), dat2, dat2$cantonname) 
+
+identicaltest <- function(x) {
+        a <- c()
+        for(i in 1:length(x)) {
+                a[i] <- isFALSE(identical(x[[i]][1], x[[i]][2]))
+        }
+        sum(a)
+}
+
+identicaltest(test)
+
+## It turns out there are two values which do not match. These are: 
+## 
