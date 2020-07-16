@@ -178,26 +178,7 @@ df.region <- data.frame(unique(df.codes$provincename.nsp))
 names(df.region) <- "provincename.nsp"
 df.region <- df.region %>%
         mutate(region = ifelse(provincename.nsp %in% coast.names, 1, 0))
-
-
-## GOAL: Create a dataframe matching postal codes with canton name.
-
-## METHOD: Extract postal codes with canton name from the pdf file, create
-## a seperator and then split the string based on the separator to create a
-## temporary dataframe. 
-
-canton.codes <- unlist(
-        str_extract_all(
-                pdf0, "[0-9]{4}(?:cantón|cantòn|..cantón)\\s*(.*)\\s*(?:\r\n[0-9]\r\nc|\r\n[0-9]{2}\r\nc|c)omprende"))
-
-canton.codes <- gsub(pattern = "(?:cantón|cantòn|[^0-9]{2}cantón)", 
-                     replacement = "-", canton.codes)
-canton.codes <- gsub(pattern = "(?:\r\ncomprende|\r\n[0-9]\r\ncomprende|\r\n[0-9]{2}\r\ncomprende)", replacement = "", canton.codes)
-df.canton <- data.frame(str_split_fixed(canton.codes, pattern = "-", 2))
-
-## METHOD: Clean up dataframe names. 
-names(df.canton) <- c("cantoncode", "cantonname")
-remove(canton.codes)
+remove(coast.names)
 
 
 ## ----------------------------------------------------------------##
