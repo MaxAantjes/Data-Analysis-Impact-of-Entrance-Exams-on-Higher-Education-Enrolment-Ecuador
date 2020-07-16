@@ -5,7 +5,7 @@
 ## ----------------------------------------------------------------##
 ## GOAL: load packages. 
 library(pacman)
-pacman::p_load(pdftools,stringr,tidyverse)
+pacman::p_load(pdftools,stringr,tidyverse, openxlsx)
 
 
 ## ----------------------------------------------------------------##
@@ -31,19 +31,81 @@ pdf0 <- gsub(" ", "", pdf0)
 ## additional columns of separated codes (provincial level, canton level, 
 ## parroquia level)
 
-## METHOD: Extract all codes from pdf file.
+## METHOD: Write a function which replaces all special characters with normal
+## characters to make merging different data sets (with different use of 
+## special characters possible).
 
-df.codes <- data.frame(str_extract_all(pdf0, "[0-9]{6}"))
+replace_special_char <- function(x) {
+        
+        original <- c("á", "é", "ó", "ú", "ñ", "í")
+        new <- c("a", "e", "o", "u", "n", "i")
+        
+        for(i in 1:length(original)) {
+                
+                x <- gsub(original[i], new[i], x)
+                
+        }
+        
+        return(x)
+}
 
-## METHOD: Add seperator between codes and split the codes into new variables. 
+## METHOD: The datarequired will have to be downloaded manually, as the file has 
+## erroneously been saved as a 1993 Excel 5.0 file. The problems this generates
+## become evident from the following github conversation:
+## https://github.com/tidyverse/readxl/issues/618.Download 
+## download the following file from the Ecuadorian government with
+## all postcode matches during the 2010 census -
+## https://www.ecuadorencifras.gob.ec/wp-content/plugins/download-monitor/download.php?id=334&force=1
+## convert and save it in the working directory as a .xlsx file with the name
+## "postcodes.xlsx"
 
-provincecode <- unlist(str_extract_all(df.codes[,1], "^[0-9]{2}"))
-cantoncode <- unlist(str_extract_all(df.codes[,1], "^[0-9]{4}"))
+temp.provinces <- read.xlsx("postcodes.xlsx", sheet = 1, rows = 11:36, 
+                            colNames = FALSE)
+temp.provinces <- data.frame(str_split(temp.provinces[,1], 
+                                       "\\.", 2, simplify = TRUE))
+temp.provinces <- temp.provinces %>%
+        mutate(X1 = gsub(" ", "", X1)) %>%
+        mutate(provincecode = ifelse(nchar(X1) < 2, paste0("0", X1), X1)) %>%
+        mutate(provincename = X2) %>%
+        mutate(X2 = tolower(gsub(" ", "", X2))) %>%
+        mutate(provincename.nsp = replace_special_char(X2)) %>%
+        select(provincecode, provincename, provincename.nsp)
+        
+temp.cantons <- read.xlsx("postcodes.xlsx", sheet = 2, rows = 11:240, 
+                            colNames = FALSE)
+temp.cantons <- data.frame(str_split(temp.cantons[,1], 
+                                       "\\.", 2, simplify = TRUE))
+temp.cantons <- temp.cantons %>%
+        mutate(X1 = gsub(" ", "", X1)) %>%
+        mutate(cantoncode = ifelse(nchar(X1) < 4, paste0("0", X1), X1)) %>%
+        mutate(provincecode = str_extract(cantoncode, "^[0-9]{2}")) %>%
+        mutate(cantonname = X2) %>%
+        mutate(X2 = tolower(gsub(" ", "", X2))) %>%
+        mutate(cantonname.nsp = replace_special_char(X2)) %>%
+        select(cantoncode, provincecode, cantonname, cantonname.nsp)
 
-## METHOD: combine the two dataframes into one.
-df.codes <- cbind(df.codes, provincecode, cantoncode)
-names(df.codes) <- c("postcode", "provincecode", "cantoncode")
-remove(temp1)
+temp.parroquia <- read.xlsx("postcodes.xlsx", sheet = 3, rows = 11:1237, 
+                          colNames = FALSE)
+temp.parroquia <- data.frame(str_split(temp.parroquia[,1], 
+                                     "\\.", 2, simplify = TRUE))
+temp.parroquia <- temp.parroquia %>%
+        mutate(X1 = gsub(" ", "", X1)) %>%
+        mutate(parroquiacode = ifelse(nchar(X1) < 6, paste0("0", X1), X1)) %>%
+        mutate(cantoncode = str_extract(parroquiacode, "^[0-9]{4}")) %>%
+        mutate(parroquianame = X2) %>%
+        mutate(X2 = tolower(gsub(" ", "", X2))) %>%
+        mutate(parroquianame.nsp = replace_special_char(X2)) %>%
+        select(parroquiacode, cantoncode, parroquianame, parroquianame.nsp)
+
+## merge the dataframes
+df.codes <- temp.parroquia %>%
+        left_join(temp.cantons, by = "cantoncode") %>%
+        left_join(temp.provinces, by = "provincecode") %>%
+        select(1,2,5,3,6,8,4,7,9)
+
+remove(temp.parroquia, temp.cantons, temp.provinces)
+
+
 
 
 ## ----------------------------------------------------------------##
