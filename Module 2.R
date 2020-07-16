@@ -106,8 +106,6 @@ df.codes <- temp.parroquia %>%
 remove(temp.parroquia, temp.cantons, temp.provinces)
 
 
-
-
 ## ----------------------------------------------------------------##
 ## GOAL: Create data frame (dat.area) of postal codes matched with urban or 
 ## rural area. 
@@ -169,29 +167,17 @@ remove(new, original, rural.list, pdf1, rural.text, urban.text, rural.codes,
 ## METHOD: Create a vector of the codes of coastal provinces based on 
 ## https://es.wikipedia.org/wiki/Regi%C3%B3n_Costa#Divisi%C3%B3n_pol%C3%ADtica
 
-coast.names <- c("eloro", "esmeraldas", "guayas", "losríos", "manabí", 
-                 "santaelena", "santodomingodelostsáchilas")
+coast.names <- c("eloro", "esmeraldas", "guayas", "losrios", "manabi", 
+                 "santaelena", "santodomingo")
 
-## METHOD: Create a dataframe of strings with information on each province and
-## province code. Then, split strings and check for matches with coast.names
-## vector to create a three variable dataframe (provincename, provincecode and
-## region (0 = highlands, 1 = coastal)).
+## METHOD: Create a dataframe which specifies whether a province belongs to
+## the coast or highlands.
+df.region <- data.frame()
 
-df.region <- data.frame(
-        unlist(str_extract_all(pdf0, 
-                               "[0-9]{2}provincia\\s*(.*)\\s*(?:\r\n20\r\ncomprende|comprende)")))
-
-names(df.region) <- "temp"
-
+df.region <- data.frame(unique(df.codes$provincename.nsp))
+names(df.region) <- "provincename.nsp"
 df.region <- df.region %>%
-        mutate(provincename = change_name(temp,
-        c("[0-9]{2}provincia(?:de|del)(\\s*(.*)\\s*)", 
-        "(?:\r\n20\r\ncomprende|\r\ncomprende)"), c("\\1", ""))) %>%
-        mutate(provincecode = str_extract(temp, "^[0-9]{2}")) %>%
-        mutate(region = ifelse(provincename %in% coast.names, 1, 0)) %>%
-        select(-temp)
-
-remove(coast.names)
+        mutate(region = ifelse(provincename.nsp %in% coast.names, 1, 0))
 
 
 ## GOAL: Create a dataframe matching postal codes with canton name.
