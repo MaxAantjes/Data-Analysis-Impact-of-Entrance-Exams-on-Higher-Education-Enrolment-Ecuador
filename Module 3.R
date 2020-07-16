@@ -130,9 +130,10 @@ dat2 <- dat1 %>%
         filter(subset1 == "Total" & subset2 == "Total") %>%
         mutate(X.5 = gsub(",", "", X.5)) %>%
         mutate(X.6 = gsub(",", "", X.6)) %>%
-        mutate(young.adult.population = as.integer(X.5) + as.integer(X.6)) %>%
+        mutate(young.adult.population.2010 = as.integer(X.5) + 
+                       as.integer(X.6)) %>%
         mutate(cantonname = tolower(gsub(" ", "", cantonname))) %>%
-        select(cantonname, young.adult.population)
+        select(cantonname, young.adult.population.2010)
 
 ## As it turns out the data is duplicated in the data set. After checking the
 ## original excel document this turns out to be the case there too. We will now
@@ -142,7 +143,8 @@ lapply(unique(dat2$cantonname), subset, x$z=dat2)
 subsetvector <- function(x,y,z){
         a <- list()
         for(i in 1:length(x)) {
-               a[[i]] <- subset(y, z == x[i])$young.adult.population} 
+               a[[i]] <- subset(y, z == x[i])$young.adult.population.2010
+               a[[i]][3] <- x[i]} 
         return(a)}
 
 test <- subsetvector(unique(dat2$cantonname), dat2, dat2$cantonname) 
@@ -151,11 +153,40 @@ identicaltest <- function(x) {
         a <- c()
         for(i in 1:length(x)) {
                 a[i] <- isFALSE(identical(x[[i]][1], x[[i]][2]))
+                if(a[i] == TRUE) {print(x[[i]][3])}
         }
-        sum(a)
+        return(sum(a))
 }
 
 identicaltest(test)
 
-## It turns out there are two values which do not match. These are: 
-## 
+## It turns out there are two values which do not match: Bolivar and Olmedo.
+## It turns out the first two occurances of each sums to the actual total. 
+## This is why there are 446 instead of 444 values in the dataset (there are
+## 222 cantones).
+nm1 <- dat2$young.adult.population.2010[dat2$cantonname == "bolivar"]
+nm2 <- dat2$young.adult.population.2010[dat2$cantonname == "olmedo"]
+print(list(nm1, nm2))
+identical(sum(nm1[1], nm1[2]), nm1[3])
+identical(sum(nm2[1], nm2[2]), nm2[3])
+
+## We can subset the second set of values from the dataset, i.e. from row
+## 224 onwards to generate a nonduplicated set. The set was probably duplicated
+## in the first place to create an additional alphabetically ordered dataframe
+## (by viewing the dataframe you can see it's in alphabetical order, whilst
+## the start of the other list isn't).
+population.canton <- dat2[225:nrow(dat2),]
+identical(nrow(population.canton), length(unique(dat3$cantonname)))
+
+## Evidently every row now represents ONE canton and each canton is present. We 
+## can now add this information to the original dataset. As expected, no NA 
+## values were created. 
+df2 <- merge(df1, population.canton, by = "cantonname")
+length(df2$cantonname[is.na(df2$young.adult.population.2010)])
+
+## Test set: Mocache = 3,076 + 2,640; cayambe = 7,801 + 7,413; 
+## mangadelcura = 1,574	1,486
+unique(df2$young.adult.population.2010[df2$cantonname=="mocache"])
+unique(df2$young.adult.population.2010[df2$cantonname=="cayambe"])
+unique(df2$young.adult.population.2010[df2$cantonname=="mangadelcura"])
+
