@@ -29,12 +29,27 @@ dftec <- read.xlsx(file.path(
 unlink(temp)
 remove(url)
 
+## METHOD: load useful function
+replace_special_char <- function(x) {
+        
+        original <- c("á", "é", "ó", "ú", "ñ", "í")
+        new <- c("a", "e", "o", "u", "n", "i")
+        
+        for(i in 1:length(original)) {
+                
+                x <- gsub(original[i], new[i], x)
+                
+        }
+        
+        return(x)
+}
+
 ## METHOD: clean data set of university places.
 places.canton.uni <- dfuni %>%
         filter(!(Tipo.de.IES %in% "Total")) %>%
         select(-c(Tipo.de.IES, Provincia.del.Campus)) %>%
 
-## METHOD: merge the two semester columns into annual columns
+## METHOD: merge the two semester columns into annual columns.
         mutate(accepted.offers.2012 = rowSums(.[2:3])) %>%
         mutate(accepted.offers.2013 = rowSums(.[4:5])) %>%
         mutate(accepted.offers.2014 = rowSums(.[6:7])) %>%
@@ -42,12 +57,21 @@ places.canton.uni <- dfuni %>%
         mutate(accepted.offers.2016 = rowSums(.[10:11])) %>%
         mutate(accepted.offers.2017 = rowSums(.[12:13])) %>%
         mutate(accepted.offers.2018 = rowSums(.[14])) %>%
-        mutate(cantonname = tolower(Cantón.del.Campus)) %>%
-        mutate(cantonname = gsub(" ", "", cantonname)) %>%
-        select(-c(1:14)) 
+        mutate(cantonname.nsp = tolower(Cantón.del.Campus)) %>%
+        select(-Cantón.del.Campus) %>%
+        mutate(cantonname.nsp = gsub(" ", "", cantonname.nsp)) %>%
+        mutate(cantonname.nsp = replace_special_char(cantonname.nsp)) %>%
+        
+        ## METHOD: merge the doubly mentioned Quito (distritometropolitanodequito
+        ## and quito obviously refer to the same area as there is no data overlap.
+        mutate(cantonname.nsp = gsub("distritometropolitanodequito", 
+                                     "quito", cantonname.nsp)) %>%
+        group_by(cantonname.nsp) %>%
+        summarise_all(list(sum)) %>%
+        select(-c(2:14)) 
         
 
-## METHOD: clean data set of tecnological schools
+## METHOD: clean data set of tecnological schools.
 names(dftec) <- names(dfuni)
 places.canton.tec <-dftec %>%
         select(-c(Tipo.de.IES, Provincia.del.Campus)) %>%
@@ -60,13 +84,22 @@ places.canton.tec <-dftec %>%
         mutate(accepted.offers.2016 = rowSums(.[10:11])) %>%
         mutate(accepted.offers.2017 = rowSums(.[12:13])) %>%
         mutate(accepted.offers.2018 = rowSums(.[14])) %>%
-        mutate(cantonname = tolower(Cantón.del.Campus)) %>%
-        mutate(cantonname = gsub(" ", "", cantonname)) %>%
-        select(-c(1:14))
+        mutate(cantonname.nsp = tolower(Cantón.del.Campus)) %>%
+        select(-Cantón.del.Campus) %>%
+        mutate(cantonname.nsp = gsub(" ", "", cantonname.nsp)) %>%
+        mutate(cantonname.nsp = replace_special_char(cantonname.nsp)) %>%
+
+        ## METHOD: merge the doubly mentioned yantzaza (yantzaza and
+        ## yantzaza(yantzaza) obviously refer to the same area as there is no 
+        ## data overlap.
+        mutate(cantonname.nsp = gsub("\\(.*\\)", "", cantonname.nsp)) %>%
+        group_by(cantonname.nsp) %>%
+        summarise_all(list(sum)) %>%
+        select(-c(2:14))
 
 ## METHOD: merge datasets
 places.canton <- merge(places.canton.uni, places.canton.tec,
-                       by = "cantonname", all.x = TRUE, all.y = TRUE,
+                       by = "cantonname.nsp", all.x = TRUE, all.y = TRUE,
                        suffixes = c(".uni", ".tec"))
 
 ## METHOD: replace the newly created NA values with 0, as their omission in the
@@ -77,16 +110,13 @@ places.canton[is.na(places.canton)] <- 0
 ## METHOD: Create a new variable with total higher education places available
 ## per year.
 places.canton <- places.canton %>%
-        mutate(accepted.offers.2012 = rowSums(.[,c(2,9)])) %>%
-        mutate(accepted.offers.2013 = rowSums(.[,c(3,10)])) %>%
-        mutate(accepted.offers.2014 = rowSums(.[,c(4,11)])) %>%
-        mutate(accepted.offers.2015 = rowSums(.[,c(5,12)])) %>%
-        mutate(accepted.offers.2016 = rowSums(.[,c(6,13)])) %>%
-        mutate(accepted.offers.2017 = rowSums(.[,c(7,14)])) %>%
-        mutate(accepted.offers.2018 = rowSums(.[,c(8,15)])) 
-        
-## METHOD: merge data set with the postcode data set.
-df1 <- merge(df0, places.canton, by = "cantonname")
+        mutate(accepted.offers.total.2012 = rowSums(.[,c(2,9)])) %>%
+        mutate(accepted.offers.total.2013 = rowSums(.[,c(3,10)])) %>%
+        mutate(accepted.offers.total.2014 = rowSums(.[,c(4,11)])) %>%
+        mutate(accepted.offers.total.2015 = rowSums(.[,c(5,12)])) %>%
+        mutate(accepted.offers.total.2016 = rowSums(.[,c(6,13)])) %>%
+        mutate(accepted.offers.total.2017 = rowSums(.[,c(7,14)])) %>%
+        mutate(accepted.offers.total.2018 = rowSums(.[,c(8,15)])) 
 
 
 ## Next data set required will have to be downloaded manually, as the file has 
@@ -181,8 +211,9 @@ identical(nrow(population.canton), length(unique(dat3$cantonname)))
 ## Evidently every row now represents ONE canton and each canton is present. We 
 ## can now add this information to the original dataset. As expected, no NA 
 ## values were created. 
-df2 <- merge(df1, population.canton, by = "cantonname")
-length(df2$cantonname[is.na(df2$young.adult.population.2010)])
+df2 <- merge(df1, population.canton, by = "cantonname", all.x = TRUE)
+df2$cantonname[is.na(df2$young.adult.population.2010)]
+sum(is.na(df2$young.adult.population.2010))
 
 ## Test set: Mocache = 3,076 + 2,640; cayambe = 7,801 + 7,413; 
 ## mangadelcura = 1,574	1,486
