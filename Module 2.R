@@ -5,7 +5,7 @@
 ## ----------------------------------------------------------------##
 ## GOAL: load packages. 
 library(pacman)
-pacman::p_load(pdftools,stringr,tidyverse, openxlsx)
+pacman::p_load(pdftools,stringr,tidyverse,openxlsx)
 
 
 ## ----------------------------------------------------------------##
@@ -96,7 +96,7 @@ temp.cantons <- temp.cantons %>%
 
 ## METHOD: load the parroquia data and prepare for merge through cantoncode. 
 
-temp.parroquia <- read.xlsx("postcodes.xlsx", sheet = 3, rows = 11:1237, 
+temp.parroquia <- read.xlsx("postcodes.xlsx", sheet = 3, rows = 11:1031, 
                           colNames = FALSE)
 temp.parroquia <- data.frame(str_split(temp.parroquia[,1], 
                                      "\\.", 2, simplify = TRUE))
@@ -140,7 +140,7 @@ change_name <- function(x, original, new) {
 
 original <- c("rural", "cant(?:ó|ò)n", "zonam", 
               "zonasenestudio", "conlasparroquiasurbanas")
-new <- c("endurban-split-startrural", "endrural-split-starturban", 
+new <- c("endurban-split-startrural", "endurbanendrural-split-starturban", 
          "endurbanendrural-split-starturban", "endrural-split-", 
          "endurban-split-starturban")
 pdf1 <- change_name(pdf0, original,new)
