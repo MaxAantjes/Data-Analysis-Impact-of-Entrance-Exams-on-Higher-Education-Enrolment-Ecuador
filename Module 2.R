@@ -9,7 +9,23 @@ pacman::p_load(pdftools,stringr,tidyverse, openxlsx)
 
 
 ## ----------------------------------------------------------------##
-## GOAL: download raw data.  
+## GOAL: download raw data. 
+
+## METHOD: The datarequired will have to be downloaded manually, as the file has 
+## erroneously been saved as a 1993 Excel 5.0 file. The problems this generates
+## become evident from the following github conversation:
+## https://github.com/tidyverse/readxl/issues/618.Download 
+## download the following file from the Ecuadorian government with
+## all postcode matches during the 2010 census -
+## https://www.ecuadorencifras.gob.ec/wp-content/plugins/download-monitor/download.php?id=334&force=1
+## convert and save it in the working directory as a .xlsx file with the name
+## "postcodes.xlsx"
+
+check <- function(x){if(file.exists(x) == FALSE){warning(
+        "STOP: download file manually")}}
+check("postcodeS.xlsx")
+
+## METHOD: download government file on the rural/urban division of parroquias. 
 url <- "https://aplicaciones2.ecuadorencifras.gob.ec/SIN/descargas/cge2019.pdf"
 td = tempdir()
 temp = tempfile(tmpdir=td, fileext=".pdf")
@@ -49,15 +65,7 @@ replace_special_char <- function(x) {
         return(x)
 }
 
-## METHOD: The datarequired will have to be downloaded manually, as the file has 
-## erroneously been saved as a 1993 Excel 5.0 file. The problems this generates
-## become evident from the following github conversation:
-## https://github.com/tidyverse/readxl/issues/618.Download 
-## download the following file from the Ecuadorian government with
-## all postcode matches during the 2010 census -
-## https://www.ecuadorencifras.gob.ec/wp-content/plugins/download-monitor/download.php?id=334&force=1
-## convert and save it in the working directory as a .xlsx file with the name
-## "postcodes.xlsx"
+## METHOD: load the province data.
 
 temp.provinces <- read.xlsx("postcodes.xlsx", sheet = 1, rows = 11:36, 
                             colNames = FALSE)
@@ -70,6 +78,8 @@ temp.provinces <- temp.provinces %>%
         mutate(X2 = tolower(gsub(" ", "", X2))) %>%
         mutate(provincename.nsp = replace_special_char(X2)) %>%
         select(provincecode, provincename, provincename.nsp)
+
+## METHOD: load the canton data and prepare for merge through provincecode.
         
 temp.cantons <- read.xlsx("postcodes.xlsx", sheet = 2, rows = 11:240, 
                             colNames = FALSE)
@@ -83,6 +93,8 @@ temp.cantons <- temp.cantons %>%
         mutate(X2 = tolower(gsub(" ", "", X2))) %>%
         mutate(cantonname.nsp = replace_special_char(X2)) %>%
         select(cantoncode, provincecode, cantonname, cantonname.nsp)
+
+## METHOD: load the parroquia data and prepare for merge through cantoncode. 
 
 temp.parroquia <- read.xlsx("postcodes.xlsx", sheet = 3, rows = 11:1237, 
                           colNames = FALSE)
@@ -126,33 +138,37 @@ change_name <- function(x, original, new) {
 ## METHOD: Change text according to pattern in order to demark
 ## the beginning and end of rural code lists. 
 
-original <- c("rural", "(?:cantón|cantòn)", "zonasenestudio", "zonam")
-new <- c("splitsplitstartrural", "endruralsplitsplit",
-         "endruralsplitsplit", "endruralsplitsplit")
+original <- c("rural", "cant(?:ó|ò)n", "zonam", 
+              "zonasenestudio", "conlasparroquiasurbanas")
+new <- c("endurban-split-startrural", "endrural-split-starturban", 
+         "endurbanendrural-split-starturban", "endrural-split-", 
+         "endurban-split-starturban")
 pdf1 <- change_name(pdf0, original,new)
 
 ## METHOD: Create a list of the list numbers of the elements
 ## containing chunks of text with rural postal codes.
 
-pdf1 <- str_split(pdf1, "splitsplit")
+pdf1 <- str_split(pdf1, "-split-")
 rural.list <- unlist(lapply(pdf1, grep, pattern = 
-                              "startrural(.*)endrural"))
+                                    "startrural(.*)endrural"))
+urban.list <- unlist(lapply(pdf1, grep, pattern = 
+                                    "starturban(.*)endurban"))
 
 ## METHOD: Separate the list into a list with urban postcodes
 ## and a list with rural postcodes. 
 rural.text <- pdf1[[1]][rural.list]
-urban.text <- pdf1[[1]][-rural.list]
+urban.text <- pdf1[[1]][urban.list]
 
 ## METHOD: Extract the codes from each list and store them 
 ## into a dataframe with variable area (1 = rural, 0 = urban). 
-rural.codes <- data.frame(unique(unlist(str_extract_all(rural.text, 
-                               "[0-9]{6}"))))
+rural.codes <- data.frame(unlist(str_extract_all(rural.text, 
+                               "[0-9]{6}")))
 urban.codes <- data.frame(unique(unlist(str_extract_all(urban.text, 
                                 "[0-9]{6}"))))
 
-names(rural.codes) <- "postcode"
+names(rural.codes) <- "parroquiacode"
 rural.codes <- mutate(rural.codes, area = 1)
-names(urban.codes) <- "postcode"
+names(urban.codes) <- "parroquiacode"
 urban.codes <- mutate(urban.codes, area = 0)
 df.area <- rbind(rural.codes, urban.codes)
 
@@ -171,7 +187,7 @@ coast.names <- c("eloro", "esmeraldas", "guayas", "losrios", "manabi",
                  "santaelena", "santodomingo")
 
 ## METHOD: Create a dataframe which specifies whether a province belongs to
-## the coast or highlands.
+## the coast or highlands (1 = coast, 0 = highlands).
 df.region <- data.frame()
 
 df.region <- data.frame(unique(df.codes$provincename.nsp))
@@ -187,16 +203,14 @@ remove(coast.names)
 ## METHOD: utilise merge function. 
 
 dat0 <- df.codes %>%
-        left_join(df.area, by = "postcode") %>%
-        left_join(df.region, by = "provincecode") %>%
-        left_join(df.canton, by = "cantoncode") %>%
-        select(1, 2, 5, 3, 7, 4, 5, 6)
+        left_join(df.area, by = "parroquiacode") %>%
+        left_join(df.region, by = "provincename.nsp") 
 
 ## METHOD: check for missing values.
 
-unique(dat0$cantoncode[is.na(dat0$cantonname)])
-unique(dat0$provincecode[is.na(dat0$provincename)])
-unique(dat0$postcode[is.na(dat0$area)])
+sum(is.na(dat0$cantonname))/nrow(dat0) 
+sum(is.na(dat0$region))/nrow(dat0)
+sum(is.na(dat0$area))/nrow(dat0)
 
 ## RESULTS: Only postcodes starting with 90 were unclassified. The reason for
 ## this is that they are under observation and not assigned any province
