@@ -12,7 +12,7 @@ pacman::p_load(openxlsx, stringr, tidyverse, zoo)
 df0 <- readRDS("postcode_classification.rds")
 
 ## METHOD: download and extract excel files for accepted places per higher 
-## education institution.
+## per recipient canton and canton of origin. 
 url <- "https://www.educacionsuperior.gob.ec/wp-content/uploads/downloads/2019/02/Cupos_Aceptados_Indice_de_Tabulados_Diciembre_2018.xlsx.zip"
 td = tempdir()
 temp = tempfile(tmpdir=td, fileext=".zip")
@@ -25,11 +25,14 @@ dfuni <- read.xlsx(file.path(
 dftec <- read.xlsx(file.path(
         td,"Cupos_Aceptados_Indice_de_Tabulados_Diciembre_2018.xlsx"), 
         sheet = 14, rows = 80:143)
+dfuni2 <- read.xlsx(file.path(
+        td,"Cupos_Aceptados_Indice_de_Tabulados_Diciembre_2018.xlsx"), 
+        sheet = 17, rows = 16:241)
+dftec2 <- read.xlsx(file.path(
+        td,"Cupos_Aceptados_Indice_de_Tabulados_Diciembre_2018.xlsx"), 
+        sheet = 17, rows = 243:466)
 unlink(temp)
 remove(url)
-
-## METHOD: download and extract excel files for accepted places per canton 
-## (origin of student).
 
 ## METHOD: download and extract excel files for population dataframe.
 ## The data required will have to be downloaded manually, as the file has 
@@ -64,22 +67,23 @@ replace_special_char <- function(x) {
 }
 
 ## ----------------------------------------------------------------##
-## GOAL: create a dataframe with the number of accepted places per canton
-## of higher education institution. 
+## GOAL: create a dataframe with the number of accepted places per canton of 
+## recipient higher education institution. 
 
-## METHOD: clean data set of university places.
+## METHOD: remove first line and column, as they contain no data. Additionally
+## remove province data as we already have cantons matched with provinces. 
 places.canton.uni <- dfuni %>%
         filter(!(Tipo.de.IES %in% "Total")) %>%
         select(-c(Tipo.de.IES, Provincia.del.Campus)) %>%
 
 ## METHOD: merge the two semester columns into annual columns.
-        mutate(accepted.offers.2012 = rowSums(.[2:3])) %>%
-        mutate(accepted.offers.2013 = rowSums(.[4:5])) %>%
-        mutate(accepted.offers.2014 = rowSums(.[6:7])) %>%
-        mutate(accepted.offers.2015 = rowSums(.[8:9])) %>%
-        mutate(accepted.offers.2016 = rowSums(.[10:11])) %>%
-        mutate(accepted.offers.2017 = rowSums(.[12:13])) %>%
-        mutate(accepted.offers.2018 = rowSums(.[14])) %>%
+        mutate(accepted.offers.inflow.2012 = rowSums(.[2:3])) %>%
+        mutate(accepted.offers.inflow.2013 = rowSums(.[4:5])) %>%
+        mutate(accepted.offers.inflow.2014 = rowSums(.[6:7])) %>%
+        mutate(accepted.offers.inflow.2015 = rowSums(.[8:9])) %>%
+        mutate(accepted.offers.inflow.2016 = rowSums(.[10:11])) %>%
+        mutate(accepted.offers.inflow.2017 = rowSums(.[12:13])) %>%
+        mutate(accepted.offers.inflow.2018 = rowSums(.[14])) %>%
         mutate(cantonname.nsp = tolower(Cantón.del.Campus)) %>%
         select(-Cantón.del.Campus) %>%
         mutate(cantonname.nsp = gsub(" ", "", cantonname.nsp)) %>%
@@ -100,13 +104,13 @@ places.canton.tec <-dftec %>%
         select(-c(Tipo.de.IES, Provincia.del.Campus)) %>%
         
         ## METHOD: merge the two semester columns into annual columns
-        mutate(accepted.offers.2012 = rowSums(.[2:3])) %>%
-        mutate(accepted.offers.2013 = rowSums(.[4:5])) %>%
-        mutate(accepted.offers.2014 = rowSums(.[6:7])) %>%
-        mutate(accepted.offers.2015 = rowSums(.[8:9])) %>%
-        mutate(accepted.offers.2016 = rowSums(.[10:11])) %>%
-        mutate(accepted.offers.2017 = rowSums(.[12:13])) %>%
-        mutate(accepted.offers.2018 = rowSums(.[14])) %>%
+        mutate(accepted.offers.inflow.2012 = rowSums(.[2:3])) %>%
+        mutate(accepted.offers.inflow.2013 = rowSums(.[4:5])) %>%
+        mutate(accepted.offers.inflow.2014 = rowSums(.[6:7])) %>%
+        mutate(accepted.offers.inflow.2015 = rowSums(.[8:9])) %>%
+        mutate(accepted.offers.inflow.2016 = rowSums(.[10:11])) %>%
+        mutate(accepted.offers.inflow.2017 = rowSums(.[12:13])) %>%
+        mutate(accepted.offers.inflow.2018 = rowSums(.[14])) %>%
         mutate(cantonname.nsp = tolower(Cantón.del.Campus)) %>%
         select(-Cantón.del.Campus) %>%
         mutate(cantonname.nsp = gsub(" ", "", cantonname.nsp)) %>%
@@ -132,18 +136,94 @@ places.canton[is.na(places.canton)] <- 0
 
 ## METHOD: Create a new variable with total higher education places available
 ## per year.
-df.places.canton <- places.canton %>%
-        mutate(accepted.offers.total.2012 = rowSums(.[,c(2,9)])) %>%
-        mutate(accepted.offers.total.2013 = rowSums(.[,c(3,10)])) %>%
-        mutate(accepted.offers.total.2014 = rowSums(.[,c(4,11)])) %>%
-        mutate(accepted.offers.total.2015 = rowSums(.[,c(5,12)])) %>%
-        mutate(accepted.offers.total.2016 = rowSums(.[,c(6,13)])) %>%
-        mutate(accepted.offers.total.2017 = rowSums(.[,c(7,14)])) %>%
-        mutate(accepted.offers.total.2018 = rowSums(.[,c(8,15)])) 
+df.places.inflow.canton <- places.canton %>%
+        mutate(accepted.offers.inflow.total.2012 = rowSums(.[,c(2,9)])) %>%
+        mutate(accepted.offers.inflow.total.2013 = rowSums(.[,c(3,10)])) %>%
+        mutate(accepted.offers.inflow.total.2014 = rowSums(.[,c(4,11)])) %>%
+        mutate(accepted.offers.inflow.total.2015 = rowSums(.[,c(5,12)])) %>%
+        mutate(accepted.offers.inflow.total.2016 = rowSums(.[,c(6,13)])) %>%
+        mutate(accepted.offers.inflow.total.2017 = rowSums(.[,c(7,14)])) %>%
+        mutate(accepted.offers.inflow.total.2018 = rowSums(.[,c(8,15)])) 
 
 remove(dftec, dfuni, places.canton, places.canton.tec, places.canton.uni)
 
-## GOAL: Create a dataframe with 
+## ----------------------------------------------------------------##
+## GOAL: create a dataframe with the number of accepted places per canton
+## of higher education institution.
+
+## METHOD: remove first line and column, as they contain no data. Additionally
+## remove province data as we already have cantons matched with provinces. 
+places.canton.uni2 <- dfuni2 %>%
+        filter(!(Tipo.de.IES %in% "Total")) %>%
+        select(-c(Tipo.de.IES, Provincia.del.Campus)) %>%
+        
+        ## METHOD: merge the two semester columns into annual columns.
+        mutate(accepted.offers.outflow.2012 = rowSums(.[2:3])) %>%
+        mutate(accepted.offers.outflow.2013 = rowSums(.[4:5])) %>%
+        mutate(accepted.offers.outflow.2014 = rowSums(.[6:7])) %>%
+        mutate(accepted.offers.outflow.2015 = rowSums(.[8:9])) %>%
+        mutate(accepted.offers.outflow.2016 = rowSums(.[10:11])) %>%
+        mutate(accepted.offers.outflow.2017 = rowSums(.[12:13])) %>%
+        mutate(accepted.offers.outflow.2018 = rowSums(.[14])) %>%
+        mutate(cantonname.nsp = tolower(Cantón.del.Campus)) %>%
+        select(-Cantón.del.Campus) %>%
+        mutate(cantonname.nsp = gsub(" ", "", cantonname.nsp)) %>%
+        mutate(cantonname.nsp = replace_special_char(cantonname.nsp)) %>%
+        
+        ## METHOD: rename (distritometropolitanodequito) as Quito to match with
+        ## other data sets. 
+        mutate(cantonname.nsp = gsub("distritometropolitanodequito", 
+                                     "quito", cantonname.nsp)) %>%
+        select(-c(2:14)) 
+
+
+## METHOD: clean data set of tecnological schools.
+names(dftec2) <- names(dfuni2)
+places.canton.tec2 <-dftec2 %>%
+        select(-c(Tipo.de.IES, Provincia.del.Campus)) %>%
+        
+        ## METHOD: merge the two semester columns into annual columns
+        mutate(accepted.offers.outflow.2012 = rowSums(.[2:3])) %>%
+        mutate(accepted.offers.outflow.2013 = rowSums(.[4:5])) %>%
+        mutate(accepted.offers.outflow.2014 = rowSums(.[6:7])) %>%
+        mutate(accepted.offers.outflow.2015 = rowSums(.[8:9])) %>%
+        mutate(accepted.offers.outflow.2016 = rowSums(.[10:11])) %>%
+        mutate(accepted.offers.outflow.2017 = rowSums(.[12:13])) %>%
+        mutate(accepted.offers.outflow.2018 = rowSums(.[14])) %>%
+        mutate(cantonname.nsp = tolower(Cantón.del.Campus)) %>%
+        select(-Cantón.del.Campus) %>%
+        mutate(cantonname.nsp = gsub(" ", "", cantonname.nsp)) %>%
+        mutate(cantonname.nsp = replace_special_char(cantonname.nsp)) %>%
+        
+        ## METHOD: rename (distritometropolitanodequito) as Quito to match with
+        ## other data sets. 
+        mutate(cantonname.nsp = gsub("distritometropolitanodequito", 
+                                     "quito", cantonname.nsp)) %>%
+        select(-c(2:14))
+
+## METHOD: merge datasets
+places.canton.outflow <- merge(places.canton.uni2, places.canton.tec2,
+                       by = "cantonname.nsp", all.x = TRUE, all.y = TRUE,
+                       suffixes = c(".uni", ".tec"))
+
+## METHOD: replace the newly created NA values with 0, as their omission in the
+## respective data sets indicates that there are no uni or technical school
+## places available. 
+places.canton[is.na(places.canton)] <- 0
+
+## METHOD: Create a new variable with total higher education places available
+## per year.
+df.places.outflow.canton <- places.canton %>%
+        mutate(accepted.offers.outflow.total.2012 = rowSums(.[,c(2,9)])) %>%
+        mutate(accepted.offers.outflow.total.2013 = rowSums(.[,c(3,10)])) %>%
+        mutate(accepted.offers.outflow.total.2014 = rowSums(.[,c(4,11)])) %>%
+        mutate(accepted.offers.outflow.total.2015 = rowSums(.[,c(5,12)])) %>%
+        mutate(accepted.offers.outflow.total.2016 = rowSums(.[,c(6,13)])) %>%
+        mutate(accepted.offers.outflow.total.2017 = rowSums(.[,c(7,14)])) %>%
+        mutate(accepted.offers.outflow.total.2018 = rowSums(.[,c(8,15)]))
+
+## ----------------------------------------------------------------##
+## GOAL: create a dataframe with population per canton.
 
 ## Next data set required will have to be downloaded manually, as the file has 
 ## erroneously been saved as a 1993 Excel 5.0 file. The problems this generates
@@ -214,10 +294,10 @@ df.population <- dat3 %>%
         select(cantonname, cantonname.nsp, young.adult.population.2010,
                total.population.2010)
 
-remove(dat1, dat2, dat3)
+remove(dat0, dat1, dat2, dat3)
 
 ## Test set: mocache = 3,076 + 2,640; cayambe = 7,801 + 7,413; 
-## mangadelcura = 1,574	1,486
+## mangadelcura = 1,574	1,486.
 unique(df.population$young.adult.population.2010[
         df.population$cantonname.nsp=="mocache"])
 unique(df.population$young.adult.population.2010[
