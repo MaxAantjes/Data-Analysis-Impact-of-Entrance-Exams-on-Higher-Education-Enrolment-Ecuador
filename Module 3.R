@@ -24,13 +24,13 @@ dfuni <- read.xlsx(file.path(
         sheet = 14, rows = 16:78)
 dftec <- read.xlsx(file.path(
         td,"Cupos_Aceptados_Indice_de_Tabulados_Diciembre_2018.xlsx"), 
-        sheet = 14, rows = 80:143)
+        sheet = 14, rows = 80:143, colNames = FALSE)
 dfuni2 <- read.xlsx(file.path(
         td,"Cupos_Aceptados_Indice_de_Tabulados_Diciembre_2018.xlsx"), 
         sheet = 17, rows = 16:241)
 dftec2 <- read.xlsx(file.path(
         td,"Cupos_Aceptados_Indice_de_Tabulados_Diciembre_2018.xlsx"), 
-        sheet = 17, rows = 243:466)
+        sheet = 17, rows = 243:466, colNames = FALSE)
 unlink(temp)
 remove(url)
 
@@ -74,36 +74,51 @@ replace_special_char <- function(x) {
 ## remove province data as we already have cantons matched with provinces. 
 places.canton.uni <- dfuni %>%
         filter(!(Tipo.de.IES %in% "Total")) %>%
-        select(-c(Tipo.de.IES, Provincia.del.Campus)) %>%
-
-## METHOD: merge the two semester columns into annual columns.
-        mutate(accepted.offers.inflow.2012 = rowSums(.[2:3])) %>%
-        mutate(accepted.offers.inflow.2013 = rowSums(.[4:5])) %>%
-        mutate(accepted.offers.inflow.2014 = rowSums(.[6:7])) %>%
-        mutate(accepted.offers.inflow.2015 = rowSums(.[8:9])) %>%
-        mutate(accepted.offers.inflow.2016 = rowSums(.[10:11])) %>%
-        mutate(accepted.offers.inflow.2017 = rowSums(.[12:13])) %>%
-        mutate(accepted.offers.inflow.2018 = rowSums(.[14])) %>%
-        mutate(cantonname.nsp = tolower(Cantón.del.Campus)) %>%
-        select(-Cantón.del.Campus) %>%
-        mutate(cantonname.nsp = gsub(" ", "", cantonname.nsp)) %>%
+        select(-Tipo.de.IES) %>%
+        
+## METHOD: replace cantonnames with codes as there are cantons in different
+## provinces with the same name. First fill missing values of provinces (due
+## to pivoted table).
+        
+        mutate(provincename = na.locf(Provincia.del.Campus)) %>%
+        mutate(provincename.nsp = tolower(gsub(" ", "", provincename))) %>%
+        mutate(provincename.nsp = replace_special_char(provincename.nsp)) %>%
+        mutate(cantonname.nsp = tolower(gsub(" ", "", Cantón.del.Campus))) %>%
         mutate(cantonname.nsp = replace_special_char(cantonname.nsp)) %>%
         
-        ## METHOD: merge the doubly mentioned Quito (distritometropolitanodequito
-        ## and quito obviously refer to the same area as there is no data overlap.
+        ## merge the doubly mentioned Quito (distritometropolitanodequito
+        ## and quito obviously refer to the same area as there is no data 
+        ## overlap. Replace Santo Domingo ... province with 'santodomingo' and
+        ## la libertad with 'libertad' and change the province of "la concordia"
+        ## to Esmeraldas (changed provinces in 2012: 
+        ## https://en.wikipedia.org/wiki/La_Concordia_Canton)
+        ## in line with the postcode data set.
         mutate(cantonname.nsp = gsub("distritometropolitanodequito", 
                                      "quito", cantonname.nsp)) %>%
-        group_by(cantonname.nsp) %>%
-        summarise_all(list(sum)) %>%
-        select(-c(2:14)) 
+        mutate(cantonname.nsp = gsub("lalibertad", "libertad", 
+                                     cantonname.nsp)) %>%
+        mutate(provincename.nsp = gsub("santodomingodelostsachilas",
+                                     "santodomingo", provincename.nsp)) %>%
+        mutate(provincename.nsp = ifelse(cantonname.nsp == "laconcordia",
+                                         "esmeraldas", provincename.nsp)) %>%
         
+        ## create match variable indicating province and canton. 
+        mutate(match = paste0(provincename.nsp, cantonname.nsp))
+        
+        ## prepare other df0 for merge.
+        
+        mergeset <- df0 %>%
+                mutate(match = paste0(provincename.nsp, cantonname.nsp)) %>%
+                select(cantoncode, match) %>% 
+                distinct(cantoncode, .keep_all = TRUE)
+        
+        ## merge the data sets.
+        
+        places.canton.uni <- places.canton.uni %>%
+                left_join(mergeset, by = "match") %>%
+                select(c(20, 3:15)) %>%
 
-## METHOD: clean data set of tecnological schools.
-names(dftec) <- names(dfuni)
-places.canton.tec <-dftec %>%
-        select(-c(Tipo.de.IES, Provincia.del.Campus)) %>%
-        
-        ## METHOD: merge the two semester columns into annual columns
+        ## METHOD: merge the two semester columns into annual columns.
         mutate(accepted.offers.inflow.2012 = rowSums(.[2:3])) %>%
         mutate(accepted.offers.inflow.2013 = rowSums(.[4:5])) %>%
         mutate(accepted.offers.inflow.2014 = rowSums(.[6:7])) %>%
@@ -111,22 +126,74 @@ places.canton.tec <-dftec %>%
         mutate(accepted.offers.inflow.2016 = rowSums(.[10:11])) %>%
         mutate(accepted.offers.inflow.2017 = rowSums(.[12:13])) %>%
         mutate(accepted.offers.inflow.2018 = rowSums(.[14])) %>%
-        mutate(cantonname.nsp = tolower(Cantón.del.Campus)) %>%
-        select(-Cantón.del.Campus) %>%
-        mutate(cantonname.nsp = gsub(" ", "", cantonname.nsp)) %>%
-        mutate(cantonname.nsp = replace_special_char(cantonname.nsp)) %>%
+        select(-c(2:14)) %>%
+        
+        
+        ## Finally, we sum the values for the repeated rows (the duplicated
+        ## values of cantons who as described above changed name during data 
+        ## collection) %>%
+        group_by(cantoncode) %>%
+        summarise_all(list(sum)) 
+        
+        ## No NA values were created. 
+        sum(is.na(places.canton.uni))
 
-        ## METHOD: merge the doubly mentioned yantzaza (yantzaza and
-        ## yantzaza(yantzaza) obviously refer to the same area as there is no 
-        ## data overlap.
-        mutate(cantonname.nsp = gsub("\\(.*\\)", "", cantonname.nsp)) %>%
-        group_by(cantonname.nsp) %>%
-        summarise_all(list(sum)) %>%
-        select(-c(2:14))
+## METHOD: clean data set of tecnological schools in the same manner.
+names(dftec) <- names(dfuni)
+ 
+places.canton.tec <- dftec %>%
+        select(-Tipo.de.IES) %>%
+        mutate(provincename = na.locf(Provincia.del.Campus)) %>%
+        mutate(provincename.nsp = tolower(gsub(" ", "", provincename))) %>%
+        mutate(provincename.nsp = replace_special_char(provincename.nsp)) %>%
+        mutate(cantonname.nsp = tolower(gsub(" ", "", Cantón.del.Campus))) %>%
+        mutate(cantonname.nsp = replace_special_char(cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("distritometropolitanodequito", 
+                                     "quito", cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("lalibertad", "libertad", 
+                                     cantonname.nsp)) %>%
+        mutate(provincename.nsp = gsub("santodomingodelostsachilas",
+                                       "santodomingo", provincename.nsp)) %>%
+        
+        ## Further alterations need to be made for matching. banosdeaguasanta
+        ## is referred to as banos in the code data set. This is its common
+        ## name according to wikipedia:
+        ## https://en.wikipedia.org/wiki/Ba%C3%B1os_de_Agua_Santa. Additionally,
+        ## two names were changed during data collection, "pelileo" which will 
+        ## be returned to "sanpedrodepelileo" and "shushufindicentral" which 
+        ## will be returned to "shushufindi". Finally yantzaza had its name
+        ## repeated between brackets for a part of the data collection process.
+        ## This must be removed as well. 
+        mutate(provincename.nsp = ifelse(cantonname.nsp == "laconcordia",
+                                         "esmeraldas", provincename.nsp)) %>%
+        mutate(cantonname.nsp = gsub("banosdeaguasanta", "banos", 
+                                       cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("shushufindicentral", "shushufindi", 
+                                     cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("^pelileo", "sanpedrodepelileo",
+                                     cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("\\(yanzatza\\)", "", cantonname.nsp)) %>%
+        
+        mutate(match = paste0(provincename.nsp, cantonname.nsp)) %>%
+        left_join(mergeset, by = "match") %>%
+        select(c(20, 3:15)) %>%
+        mutate(accepted.offers.inflow.2012 = rowSums(.[2:3])) %>%
+        mutate(accepted.offers.inflow.2013 = rowSums(.[4:5])) %>%
+        mutate(accepted.offers.inflow.2014 = rowSums(.[6:7])) %>%
+        mutate(accepted.offers.inflow.2015 = rowSums(.[8:9])) %>%
+        mutate(accepted.offers.inflow.2016 = rowSums(.[10:11])) %>%
+        mutate(accepted.offers.inflow.2017 = rowSums(.[12:13])) %>%
+        mutate(accepted.offers.inflow.2018 = rowSums(.[14])) %>%
+        select(-c(2:14)) %>%
+        group_by(cantoncode) %>%
+        summarise_all(list(sum))
+
+        ## No NA values were created. 
+        sum(is.na(places.canton.uni))
 
 ## METHOD: merge datasets
 places.canton <- merge(places.canton.uni, places.canton.tec,
-                       by = "cantonname.nsp", all.x = TRUE, all.y = TRUE,
+                       by = "cantoncode", all.x = TRUE, all.y = TRUE,
                        suffixes = c(".uni", ".tec"))
 
 ## METHOD: replace the newly created NA values with 0, as their omission in the
@@ -309,3 +376,7 @@ unique(df.population$young.adult.population.2010[
 
 
 
+
+group_by(cantonname.nsp) %>%
+        summarise_all(list(sum)) %>%
+        select(-c(2:14)) 
