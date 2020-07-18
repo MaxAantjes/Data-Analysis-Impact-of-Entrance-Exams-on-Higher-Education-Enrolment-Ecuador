@@ -6,14 +6,13 @@
 ## GOAL: load packages.
 pacman::p_load(openxlsx, stringr, tidyverse, zoo)
 
-df0 <- readRDS("postcode_classification.rds")
-
 
 ## ----------------------------------------------------------------##
-## GOAL: create dataframe of the accepted places of higher education 
-## institutions located at certain cantones per year. 
+## GOAL: download data. 
+df0 <- readRDS("postcode_classification.rds")
 
-## METHOD: download and extract excel files.
+## METHOD: download and extract excel files for accepted places per higher 
+## education institution.
 url <- "https://www.educacionsuperior.gob.ec/wp-content/uploads/downloads/2019/02/Cupos_Aceptados_Indice_de_Tabulados_Diciembre_2018.xlsx.zip"
 td = tempdir()
 temp = tempfile(tmpdir=td, fileext=".zip")
@@ -29,7 +28,27 @@ dftec <- read.xlsx(file.path(
 unlink(temp)
 remove(url)
 
-## METHOD: load useful function
+## METHOD: download and extract excel files for accepted places per canton 
+## (origin of student).
+
+## METHOD: download and extract excel files for population dataframe.
+## The data required will have to be downloaded manually, as the file has 
+## erroneously been saved as a 1993 Excel 5.0 file. The problems this generates
+## become evident from the following github conversation:
+## https://github.com/tidyverse/readxl/issues/618.Download 
+## download the following file from the Ecuadorian government with
+## all postcode matches during the 2010 census -
+## https://www.ecuadorencifras.gob.ec/wp-content/plugins/download-monitor/download.php?id=334&force=1
+## convert and save it in the working directory as a .xlsx file with the name
+## "postcodes.xlsx"
+
+check <- function(x){if(file.exists(x) == FALSE){warning(
+        "STOP: download file manually")}}
+check("postcodes.xlsx")
+
+## ----------------------------------------------------------------##
+## GOAL: Load Functions. 
+
 replace_special_char <- function(x) {
         
         original <- c("á", "é", "ó", "ú", "ñ", "í")
@@ -43,6 +62,10 @@ replace_special_char <- function(x) {
         
         return(x)
 }
+
+## ----------------------------------------------------------------##
+## GOAL: create a dataframe with the number of accepted places per canton
+## of higher education institution. 
 
 ## METHOD: clean data set of university places.
 places.canton.uni <- dfuni %>%
@@ -109,7 +132,7 @@ places.canton[is.na(places.canton)] <- 0
 
 ## METHOD: Create a new variable with total higher education places available
 ## per year.
-places.canton <- places.canton %>%
+df.places.canton <- places.canton %>%
         mutate(accepted.offers.total.2012 = rowSums(.[,c(2,9)])) %>%
         mutate(accepted.offers.total.2013 = rowSums(.[,c(3,10)])) %>%
         mutate(accepted.offers.total.2014 = rowSums(.[,c(4,11)])) %>%
@@ -118,6 +141,9 @@ places.canton <- places.canton %>%
         mutate(accepted.offers.total.2017 = rowSums(.[,c(7,14)])) %>%
         mutate(accepted.offers.total.2018 = rowSums(.[,c(8,15)])) 
 
+remove(dftec, dfuni, places.canton, places.canton.tec, places.canton.uni)
+
+## GOAL: Create a dataframe with 
 
 ## Next data set required will have to be downloaded manually, as the file has 
 ## erroneously been saved as a 1993 Excel 5.0 file. The problems this generates
@@ -131,93 +157,75 @@ places.canton <- places.canton %>%
 dat0 <- read.csv("population.csv", skip = 10)
 dat1 <- dat0
 
-## check for the number of totals in theNombre.del.Cantón column, this should 
-## equal the number of provinces, 24. In these particular sections, the values 
-## in Nombre.de.la.Parroquia represent the different cantons. Finally, again 
-## within the same section, the 'total'value in the ÁREA column indicates the row 
-## gives the total population for  that particular canton. 
-sum(!is.na(dat0$Nombre.del.Cantón[dat0$Nombre.del.Cantón == "Total"])) 
+## The dataset is a pivotted table, so to access certain data subsetting rows is 
+## necessary. In the Nombre.del.Cantón column the value "Total" indicates the 
+## start of a section with the summed values per canton within a province. In 
+## that section the cantonname is (paradoxically) found in the 
+## Nombre.de.la.Parroquia variable. There are 3 values for each canton in the 
+## ÁREA column ("Rural", "Urban" and "Total"). The row with the "Total" value 
+## gives the total population dived for each age group. Accordingly, we can 
+## extract the population for each canton by subsetting the "Total" values
+## of the Nombre.de.la.Parroquia variable and the "Total" values of the Área 
+## variables. 
+
+## Another further three operations need to be performed. Firstly, the pivoted
+## values are only filled in for the first row of the grouping. Accordingly,
+## those values need to be filled (otherwise empty values will be subsetted). 
+
+## Secondly, the entire table has been duplicated. One reason for this could
+## be to have an alphabetically and non-alphabetically ordered version (the 
+## second set is ordered alphabetically by canton). We can must thus subset
+## only one of the two data sets. Testing for this duplication and for whether
+## the values between the two duplicates match and in which rows the second 
+## dataset can be found (row 250-472) can be found in the apendix. 
+
+## Finally, the cantonnames should be cleared up for special characters to
+## allow the data set to be merged. For this we can use the 
+## replace_special_char function. 
 
 
-
-## Replace mistakes and check.
-dat1 <- dat1 %>%
-        mutate(cantonname = ifelse(Nombre.del.Cantón == "Total", "remove", 
-                                   Nombre.del.Cantón))
-sum(!is.na(dat1$Nombre.del.Cantón[dat1$cantonname == "Total"])) 
-
-## Fill missing values.
+## OPERATION 1: fill pivoted missing values.
 dat1[dat1 == ""] <- NA
-dat1$cantonname[2:length(dat1$cantonname)] <- na.locf(dat1$cantonname)
+dat1$Nombre.del.Cantón[2:length(dat1$Nombre.del.Cantón)] <- 
+        na.locf(dat1$Nombre.del.Cantón)
 dat1$Nombre.de.la.Parroquia[2:length(dat1$Nombre.de.la.Parroquia)] <-
         na.locf(dat1$Nombre.de.la.Parroquia)
 
-## Create dataframe with young adult population (20-29 y/o) per cantón. 
+## OPERATION 1: Create dataframe with population per cantón.
 dat2 <- dat1 %>%
-        mutate(subset1 = gsub(" ", "", Nombre.de.la.Parroquia)) %>%
-        mutate(subset2 = gsub(" ", "", ÁREA)) %>%
-        filter(cantonname != "remove") %>%
-        filter(subset1 == "Total" & subset2 == "Total") %>%
+        mutate(subset1 = tolower(gsub(" ", "", Nombre.de.la.Parroquia))) %>%
+        mutate(subset2 = tolower(gsub(" ", "", ÁREA))) %>%
+        filter(subset1 == "total" & subset2 == "total") %>%
         mutate(X.5 = gsub(",", "", X.5)) %>%
         mutate(X.6 = gsub(",", "", X.6)) %>%
+        mutate(total.population.2010 = as.integer(gsub(",", "", X.22))) %>%
         mutate(young.adult.population.2010 = as.integer(X.5) + 
                        as.integer(X.6)) %>%
-        mutate(cantonname = tolower(gsub(" ", "", cantonname))) %>%
-        select(cantonname, young.adult.population.2010)
+        rename(cantonname = Nombre.del.Cantón) %>%
+        select(cantonname, young.adult.population.2010, total.population.2010)
 
-## As it turns out the data is duplicated in the data set. After checking the
-## original excel document this turns out to be the case there too. We will now
-## check if the values of the duplicated data are equal for every canton.
-lapply(unique(dat2$cantonname), subset, x$z=dat2)
+## OPERATION 2: Rows 240 to 471 have been subsetted. 
+dat3 <- dat2[250:471,]
 
-subsetvector <- function(x,y,z){
-        a <- list()
-        for(i in 1:length(x)) {
-               a[[i]] <- subset(y, z == x[i])$young.adult.population.2010
-               a[[i]][3] <- x[i]} 
-        return(a)}
+## OPERATION 3: spcial characters need to be subsetted. 
+df.population <- dat3 %>%
+        mutate(cantonname.nsp = tolower(gsub(" ", "", cantonname))) %>%
+        mutate(cantonname.nsp = replace_special_char(cantonname.nsp)) %>%
+        select(cantonname, cantonname.nsp, young.adult.population.2010,
+               total.population.2010)
 
-test <- subsetvector(unique(dat2$cantonname), dat2, dat2$cantonname) 
+remove(dat1, dat2, dat3)
 
-identicaltest <- function(x) {
-        a <- c()
-        for(i in 1:length(x)) {
-                a[i] <- isFALSE(identical(x[[i]][1], x[[i]][2]))
-                if(a[i] == TRUE) {print(x[[i]][3])}
-        }
-        return(sum(a))
-}
-
-identicaltest(test)
-
-## It turns out there are two values which do not match: Bolivar and Olmedo.
-## It turns out the first two occurances of each sums to the actual total. 
-## This is why there are 446 instead of 444 values in the dataset (there are
-## 222 cantones).
-nm1 <- dat2$young.adult.population.2010[dat2$cantonname == "bolivar"]
-nm2 <- dat2$young.adult.population.2010[dat2$cantonname == "olmedo"]
-print(list(nm1, nm2))
-identical(sum(nm1[1], nm1[2]), nm1[3])
-identical(sum(nm2[1], nm2[2]), nm2[3])
-
-## We can subset the second set of values from the dataset, i.e. from row
-## 224 onwards to generate a nonduplicated set. The set was probably duplicated
-## in the first place to create an additional alphabetically ordered dataframe
-## (by viewing the dataframe you can see it's in alphabetical order, whilst
-## the start of the other list isn't).
-population.canton <- dat2[225:nrow(dat2),]
-identical(nrow(population.canton), length(unique(dat3$cantonname)))
-
-## Evidently every row now represents ONE canton and each canton is present. We 
-## can now add this information to the original dataset. As expected, no NA 
-## values were created. 
-df2 <- merge(df1, population.canton, by = "cantonname", all.x = TRUE)
-df2$cantonname[is.na(df2$young.adult.population.2010)]
-sum(is.na(df2$young.adult.population.2010))
-
-## Test set: Mocache = 3,076 + 2,640; cayambe = 7,801 + 7,413; 
+## Test set: mocache = 3,076 + 2,640; cayambe = 7,801 + 7,413; 
 ## mangadelcura = 1,574	1,486
-unique(df2$young.adult.population.2010[df2$cantonname=="mocache"])
-unique(df2$young.adult.population.2010[df2$cantonname=="cayambe"])
-unique(df2$young.adult.population.2010[df2$cantonname=="mangadelcura"])
+unique(df.population$young.adult.population.2010[
+        df.population$cantonname.nsp=="mocache"])
+unique(df.population$young.adult.population.2010[
+        df.population$cantonname.nsp=="cayambe"])
+unique(df.population$young.adult.population.2010[
+        df.population$cantonname.nsp=="mangadelcura"])
+
+
+
+
 
