@@ -20,7 +20,7 @@ pdf0 <- pdf_text(temp)
 unlink(temp)
 remove(url)
 
-## METHOD: download and extract excel files for population dataframe.
+## METHOD: download and extract excel files for postcode dataframe.
 ## The data required will have to be downloaded manually, as the file has 
 ## erroneously been saved as a 1993 Excel 5.0 file. The problems this generates
 ## become evident from the following github conversation:
@@ -29,7 +29,8 @@ remove(url)
 ## all postcode matches during the 2010 census -
 ## https://www.ecuadorencifras.gob.ec/wp-content/plugins/download-monitor/download.php?id=334&force=1
 ## convert and save it in the working directory as a .xlsx file with the name
-## "postcodes.xlsx"
+## "postcodes.xlsx". It was available (20/07/2020) from this website:
+## https://www.ecuadorencifras.gob.ec/informacion-censal-cantonal/
 
 check <- function(x){if(file.exists(x) == FALSE){warning(
         "STOP: download file manually")}}

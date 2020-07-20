@@ -41,13 +41,14 @@ remove(url)
 ## https://github.com/tidyverse/readxl/issues/618.Download 
 ## download the following file from the Ecuadorian government with
 ## all postcode matches during the 2010 census -
-## https://www.ecuadorencifras.gob.ec/wp-content/plugins/download-monitor/download.php?id=334&force=1
+## https://www.ecuadorencifras.gob.ec/wp-content/plugins/download-monitor/download.php?id=324&force=1
 ## convert and save it in the working directory as a .xlsx file with the name
-## "postcodes.xlsx"
+## "population.xlsx". It was available (20/07/2020) from this website:
+## https://www.ecuadorencifras.gob.ec/informacion-censal-cantonal/
 
 check <- function(x){if(file.exists(x) == FALSE){warning(
         "STOP: download file manually")}}
-check("postcodes.xlsx")
+check("population.xlsx")
 
 ## ----------------------------------------------------------------##
 ## GOAL: Load Functions. 
