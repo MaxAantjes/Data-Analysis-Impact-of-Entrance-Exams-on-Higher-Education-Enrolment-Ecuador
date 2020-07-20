@@ -97,7 +97,8 @@ temp.cantons <- temp.cantons %>%
 
 ## METHOD: load the parroquia data and prepare for merge through cantoncode. 
 
-temp.parroquia <- read.xlsx("postcodes.xlsx", sheet = 3, rows = 11:1031, 
+temp.parroquia <- read.xlsx("postcodes.xlsx", sheet = 3, rows = c(11:1031, 
+                                                                  1235:1237), 
                           colNames = FALSE)
 temp.parroquia <- data.frame(str_split(temp.parroquia[,1], 
                                      "\\.", 2, simplify = TRUE))
