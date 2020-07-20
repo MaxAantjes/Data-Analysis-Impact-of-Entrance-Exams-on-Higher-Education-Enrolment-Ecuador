@@ -20,6 +20,21 @@ pdf0 <- pdf_text(temp)
 unlink(temp)
 remove(url)
 
+## METHOD: download and extract excel files for population dataframe.
+## The data required will have to be downloaded manually, as the file has 
+## erroneously been saved as a 1993 Excel 5.0 file. The problems this generates
+## become evident from the following github conversation:
+## https://github.com/tidyverse/readxl/issues/618.Download 
+## download the following file from the Ecuadorian government with
+## all postcode matches during the 2010 census -
+## https://www.ecuadorencifras.gob.ec/wp-content/plugins/download-monitor/download.php?id=334&force=1
+## convert and save it in the working directory as a .xlsx file with the name
+## "postcodes.xlsx"
+
+check <- function(x){if(file.exists(x) == FALSE){warning(
+        "STOP: download file manually")}}
+check("postcodes.xlsx")
+
 
 ## ----------------------------------------------------------------##
 ## GOAL: prepare loaded character string for extraction. 
@@ -95,13 +110,11 @@ temp.parroquia <- temp.parroquia %>%
         mutate(parroquianame.nsp = replace_special_char(X2)) %>%
         select(parroquiacode, cantoncode, parroquianame, parroquianame.nsp)
 
-## merge the dataframes
+## METHOD: merge the dataframes
 df.codes <- temp.parroquia %>%
         left_join(temp.cantons, by = "cantoncode") %>%
         left_join(temp.provinces, by = "provincecode") %>%
         select(1,2,5,3,6,8,4,7,9)
-
-remove(temp.parroquia, temp.cantons, temp.provinces)
 
 
 ## ----------------------------------------------------------------##
