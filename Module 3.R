@@ -67,7 +67,16 @@ replace_special_char <- function(x) {
 }
 
 ## ----------------------------------------------------------------##
-## GOAL: Create a match set for cantonnames per province. 
+## GOAL: Create a match set for cantonnames per province.
+
+## Method: it turned out in the subsequent process that there is a
+## mistake in the df0 data set. Pablo Sexus is mistakenly called Pablo Vi. 
+## According to this website 
+## (https://worldpostalcode.com/ecuador/morona-santiago/pablo-sexto)
+## the canton matching Pablo Sexto is 1411. Yet, in the data set it is called
+## Pablo Vi. We will replace the name in the dataset accordingly.
+
+df0$cantonname.nsp[df0$cantoncode == 1411] <- "pablosexto"
 
 ## METHOD: add a row for unregistered people or data ('sin registro'). This 
 ## allows any 'missing values' in terms of cantonnames to be mergable into the 
@@ -218,7 +227,7 @@ places.canton <- merge(places.canton.uni, places.canton.tec,
 
         ## METHOD: Create a new variable with total higher education places 
         ## available per year.
-        df.places.inflow.canton <- places.canton %>%
+        df.inflow <- places.canton %>%
         mutate(accepted.offers.inflow.total.2012 = rowSums(.[,c(2,9)])) %>%
         mutate(accepted.offers.inflow.total.2013 = rowSums(.[,c(3,10)])) %>%
         mutate(accepted.offers.inflow.total.2014 = rowSums(.[,c(4,11)])) %>%
@@ -255,62 +264,109 @@ places.canton.uni2 <- dfuni2 %>%
                                         "esmeraldas", provincename.nsp)) %>%
         mutate(cantonname.nsp = gsub("banosdeaguasanta", "banos",
                                      cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("^pelileo", "sanpedrodepelileo",
+                                     cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("^pillaro", "santiagodepillaro",
+                                     cantonname.nsp)) %>%
+        
+        ## Remove the addition of jujan from alfredobaquerizomoreno(jujan) as it 
+        ## is pointing to that canton (there is no entry without jujan).
+        ## Remove tola from carlosjulioarosemena for the same reason. Change
+        ## provinces placeolder zonaenestudio to zonasnodelimitadas in line with
+        ## df0. 
+        mutate(cantonname.nsp = gsub("\\(jujan\\)", "", cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("carlosjulioarosemenatola", 
+                                     "carlosjulioarosemena", 
+                                     cantonname.nsp)) %>%
+        mutate(provincename.nsp = gsub("zonaenestudio", "zonasnodelimitadas",
+                                       provincename.nsp)) %>%
         mutate(match = paste0(provincename.nsp, cantonname.nsp)) %>%
         left_join(mergeset, by = "match") %>%
         select(c(20, 3:15)) %>%
-        mutate(accepted.offers.inflow.2012 = rowSums(.[2:3])) %>%
-        mutate(accepted.offers.inflow.2013 = rowSums(.[4:5])) %>%
-        mutate(accepted.offers.inflow.2014 = rowSums(.[6:7])) %>%
-        mutate(accepted.offers.inflow.2015 = rowSums(.[8:9])) %>%
-        mutate(accepted.offers.inflow.2016 = rowSums(.[10:11])) %>%
-        mutate(accepted.offers.inflow.2017 = rowSums(.[12:13])) %>%
-        mutate(accepted.offers.inflow.2018 = rowSums(.[14])) %>%
+        mutate(accepted.offers.outflow.2012 = rowSums(.[2:3])) %>%
+        mutate(accepted.offers.outflow.2013 = rowSums(.[4:5])) %>%
+        mutate(accepted.offers.outflow.2014 = rowSums(.[6:7])) %>%
+        mutate(accepted.offers.outflow.2015 = rowSums(.[8:9])) %>%
+        mutate(accepted.offers.outflow.2016 = rowSums(.[10:11])) %>%
+        mutate(accepted.offers.outflow.2017 = rowSums(.[12:13])) %>%
+        mutate(accepted.offers.outflow.2018 = rowSums(.[14])) %>%
         select(-c(2:14)) %>%
         group_by(cantoncode) %>%
-        summarise_all(list(sum))        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        summarise_all(list(sum)) 
+
+        ## No NA values were created. 
+        sum(is.na(places.canton.uni2))
+
+## METHOD: clean data set of tecnological schools in the same manner.
+names(dftec2) <- names(dfuni2)
+places.canton.tec2 <- dftec2 %>%
+        select(-Tipo.de.IES) %>%
+        mutate(provincename = na.locf(Provincia.del.Campus)) %>%
+        mutate(provincename.nsp = tolower(gsub(" ", "", provincename))) %>%
+        mutate(provincename.nsp = replace_special_char(provincename.nsp)) %>%
+        mutate(cantonname.nsp = tolower(gsub(" ", "", Cantón.del.Campus))) %>%
+        mutate(cantonname.nsp = replace_special_char(cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("distritometropolitanodequito",
+                                     "quito", cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("lalibertad", "libertad", 
+                                     cantonname.nsp)) %>%
+        mutate(provincename.nsp = gsub("santodomingodelostsachilas",
+                                       "santodomingo", provincename.nsp)) %>%
+        mutate(provincename.nsp = ifelse(cantonname.nsp == "laconcordia",
+                                         "esmeraldas", provincename.nsp)) %>%
+        mutate(cantonname.nsp = gsub("banosdeaguasanta", "banos",
+                                     cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("^pelileo", "sanpedrodepelileo",
+                                     cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("^pillaro", "santiagodepillaro",
+                                     cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("\\(jujan\\)", "", cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("carlosjulioarosemenatola", 
+                                     "carlosjulioarosemena", 
+                                     cantonname.nsp)) %>%
+        mutate(provincename.nsp = gsub("zonaenestudio", "zonasnodelimitadas",
+                                       provincename.nsp)) %>%
+        mutate(match = paste0(provincename.nsp, cantonname.nsp)) %>%
+        left_join(mergeset, by = "match") %>%
+        select(c(20, 3:15)) %>%
+        mutate(accepted.offers.outflow.2012 = rowSums(.[2:3])) %>%
+        mutate(accepted.offers.outflow.2013 = rowSums(.[4:5])) %>%
+        mutate(accepted.offers.outflow.2014 = rowSums(.[6:7])) %>%
+        mutate(accepted.offers.outflow.2015 = rowSums(.[8:9])) %>%
+        mutate(accepted.offers.outflow.2016 = rowSums(.[10:11])) %>%
+        mutate(accepted.offers.outflow.2017 = rowSums(.[12:13])) %>%
+        mutate(accepted.offers.outflow.2018 = rowSums(.[14])) %>%
+        select(-c(2:14)) %>%
+        group_by(cantoncode) %>%
+        summarise_all(list(sum))  
+
+        ## No NA values were created. 
+        sum(is.na(places.canton.tec2))
+
 ## METHOD: merge datasets
-places.canton.outflow <- merge(places.canton.uni2, places.canton.tec2,
-                       by = "cantonname.nsp", all.x = TRUE, all.y = TRUE,
+places.canton <- merge(places.canton.uni2, places.canton.tec2,
+                       by = "cantoncode", all.x = TRUE, all.y = TRUE,
                        suffixes = c(".uni", ".tec"))
 
-## METHOD: replace the newly created NA values with 0, as their omission in the
-## respective data sets indicates that there are no uni or technical school
-## places available. 
+## METHOD: replace the newly created NA values with 0, as their omission 
+## in the respective data sets indicates that there are no uni or 
+## technical school places available. 
 places.canton[is.na(places.canton)] <- 0
 
-## METHOD: Create a new variable with total higher education places available
-## per year.
-df.places.outflow.canton <- places.canton %>%
+## METHOD: Create a new variable with total higher education places 
+## available per year.
+df.outflow <- places.canton %>%
         mutate(accepted.offers.outflow.total.2012 = rowSums(.[,c(2,9)])) %>%
         mutate(accepted.offers.outflow.total.2013 = rowSums(.[,c(3,10)])) %>%
         mutate(accepted.offers.outflow.total.2014 = rowSums(.[,c(4,11)])) %>%
         mutate(accepted.offers.outflow.total.2015 = rowSums(.[,c(5,12)])) %>%
         mutate(accepted.offers.outflow.total.2016 = rowSums(.[,c(6,13)])) %>%
         mutate(accepted.offers.outflow.total.2017 = rowSums(.[,c(7,14)])) %>%
-        mutate(accepted.offers.outflow.total.2018 = rowSums(.[,c(8,15)]))
+        mutate(accepted.offers.outflow.total.2018 = rowSums(.[,c(8,15)])) 
+
+remove(dftec2, dfuni2, places.canton, places.canton.tec2, 
+       places.canton.uni2)
+        
 
 ## ----------------------------------------------------------------##
 ## GOAL: create a dataframe with population per canton.
@@ -394,12 +450,3 @@ unique(df.population$young.adult.population.2010[
         df.population$cantonname.nsp=="cayambe"])
 unique(df.population$young.adult.population.2010[
         df.population$cantonname.nsp=="mangadelcura"])
-
-
-
-
-
-
-group_by(cantonname.nsp) %>%
-        summarise_all(list(sum)) %>%
-        select(-c(2:14)) 
