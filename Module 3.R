@@ -372,44 +372,40 @@ remove(dftec2, dfuni2, places.canton, places.canton.tec2,
 ## ----------------------------------------------------------------##
 ## GOAL: create a dataframe with population per canton.
 
-## Next data set required will have to be downloaded manually, as the file has 
-## erroneously been saved as a 1993 Excel 5.0 file. The problems this generates
-## become evident from the following github conversation:
-## https://github.com/tidyverse/readxl/issues/618. Simply download the file 
-## available here:
-## https://www.ecuadorencifras.gob.ec/wp-content/plugins/download-monitor/download.php?id=324&force=1 
-## then save it as a csv file in your working directory under the name
-## population.csv. 
-
 dat0 <- read.csv("population.csv", skip = 10)
 dat1 <- dat0
 
 ## The dataset is a pivotted table, so to access certain data subsetting rows is 
-## necessary. In the Nombre.del.Cantón column the value "Total" indicates the 
-## start of a section with the summed values per canton within a province. In 
-## that section the cantonname is (paradoxically) found in the 
-## Nombre.de.la.Parroquia variable. There are 3 values for each canton in the 
-## ÁREA column ("Rural", "Urban" and "Total"). The row with the "Total" value 
-## gives the total population dived for each age group. Accordingly, we can 
-## extract the population for each canton by subsetting the "Total" values
-## of the Nombre.de.la.Parroquia variable and the "Total" values of the Área 
-## variables. 
+## necessary. In the Nombre.de.la.Parroquia column the value "Total" indicates 
+## the summed population for that particular canton (where the name of the 
+## canton can be found in the Nombre.delCantón variable). For each of these 
+## summations, there are 3 values in the ÁREA column ("Rural", "Urban" and 
+## "Total"). The row with the "Total" value gives the total population for each 
+## age group. Accordingly, we can extract the population for each canton by 
+## subsetting the "Total" values of the Nombre.de.la.Parroquia variable and the 
+## "Total" values of the Área variables. 
 
 ## Another further three operations need to be performed. Firstly, the pivoted
 ## values are only filled in for the first row of the grouping. Accordingly,
 ## those values need to be filled (otherwise empty values will be subsetted). 
+## Next, 'Total' values in the Nombre del Cantón set need to be removed, as
+## These sum the population of sets of cantons (on provincial level).
 
-## Secondly, the entire table has been duplicated. One reason for this could
+## Secondly, there are 'Total' values in the Nombre.del.Cantón which initiate
+## a section with all parroquias in a province. These must be removed from the
+## data, as they are simply a repetition of the data at individual canton level.
+
+## Thirdly, the entire table has been duplicated. One reason for this could
 ## be to have an alphabetically and non-alphabetically ordered version (the 
 ## second set is ordered alphabetically by canton). We can must thus subset
 ## only one of the two data sets. Testing for this duplication and for whether
-## the values between the two duplicates match and in which rows the second 
-## dataset can be found (row 250-472) can be found in the apendix. 
+## the values between the two duplicates match and in which rows in the 
+## subsetted data set, the first set of values can be found (row 0-250). The
+## test for this can be found in the apendix.
 
 ## Finally, the cantonnames should be cleared up for special characters to
 ## allow the data set to be merged. For this we can use the 
 ## replace_special_char function. 
-
 
 ## OPERATION 1: fill pivoted missing values.
 dat1[dat1 == ""] <- NA
@@ -417,6 +413,7 @@ dat1$Nombre.del.Cantón[2:length(dat1$Nombre.del.Cantón)] <-
         na.locf(dat1$Nombre.del.Cantón)
 dat1$Nombre.de.la.Parroquia[2:length(dat1$Nombre.de.la.Parroquia)] <-
         na.locf(dat1$Nombre.de.la.Parroquia)
+dat1$Provincia[2:length(dat1$Provincia)] <- na.locf(dat1$Provincia)
 
 ## OPERATION 1: Create dataframe with population per cantón.
 dat2 <- dat1 %>%
@@ -429,19 +426,38 @@ dat2 <- dat1 %>%
         mutate(young.adult.population.2010 = as.integer(X.5) + 
                        as.integer(X.6)) %>%
         rename(cantonname = Nombre.del.Cantón) %>%
-        select(cantonname, young.adult.population.2010, total.population.2010)
+        select(cantonname, young.adult.population.2010, total.population.2010,
+               Provincia)
 
-## OPERATION 2: Rows 240 to 471 have been subsetted. 
-dat3 <- dat2[250:471,]
+## OPERATION 2: Remove 'Total' values in the cantonname variable.
+dat3 <- dat2 %>%
+        filter(cantonname != 'Total')
 
-## OPERATION 3: spcial characters need to be subsetted. 
-df.population <- dat3 %>%
+## OPERATION 2: Rows 1 to 224 have been subsetted. 
+dat4 <- dat3[0:224,]
+
+## OPERATION 3: replace cantonnames with codes.  
+df.population <- dat4 %>%
         mutate(cantonname.nsp = tolower(gsub(" ", "", cantonname))) %>%
         mutate(cantonname.nsp = replace_special_char(cantonname.nsp)) %>%
-        select(cantonname, cantonname.nsp, young.adult.population.2010,
+        mutate(provincename.nsp = tolower(gsub(" ", "", Provincia))) %>%
+        mutate(provincename.nsp = replace_special_char(provincename.nsp)) %>%
+        
+        ## Make name changes for matching.
+        mutate(cantonname.nsp = gsub("sanjosedechimbo", "chimbo",
+                                     cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("pablovi", "pablosexto",
+                                     cantonname.nsp)) %>%
+        mutate(cantonname.nsp = gsub("delostsachilas", "",
+                                       cantonname.nsp)) %>% 
+        
+        # Merge with mergeset. 
+        mutate(match = paste0(provincename.nsp, cantonname.nsp)) %>%
+        left_join(mergeset, by = "match") %>%
+        select(cantoncode, young.adult.population.2010,
                total.population.2010)
 
-remove(dat0, dat1, dat2, dat3)
+remove(dat0, dat1, dat2, dat3, dat4)
 
 ## Test set: mocache = 3,076 + 2,640; cayambe = 7,801 + 7,413; 
 ## mangadelcura = 1,574	1,486.
