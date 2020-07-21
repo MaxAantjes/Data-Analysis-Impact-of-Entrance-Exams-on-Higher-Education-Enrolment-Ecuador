@@ -118,6 +118,8 @@ df.codes <- temp.parroquia %>%
         left_join(temp.provinces, by = "provincecode") %>%
         select(1,2,5,3,6,8,4,7,9)
 
+remove(temp.cantons, temp.parroquia, temp.provinces)
+
 
 ## ----------------------------------------------------------------##
 ## GOAL: Create data frame (dat.area) of postal codes matched with urban or 
@@ -181,11 +183,17 @@ remove(new, original, rural.list, pdf1, rural.text, urban.text, rural.codes,
 ## GOAL: create a dataframe which matches each postal code to the region
 ## (coast or highlands)
 
-## METHOD: Create a vector of the codes of coastal provinces based on 
-## https://es.wikipedia.org/wiki/Regi%C3%B3n_Costa#Divisi%C3%B3n_pol%C3%ADtica
+## METHOD: Create sets of province names in terms of different regions based on 
+## http://www.enciclopediadelecuador.com/geografia-del-ecuador/provincias-del-ecuador/?fbclid=IwAR3x-CJgSQSg-2hS2CWjcoqQ1FwTH7DV74IYl9CK1wxs-nYGULTwH4dQ1_g
 
-coast.names <- c("eloro", "esmeraldas", "guayas", "losrios", "manabi", 
-                 "santaelena", "santodomingo")
+costa.names <- c("eloro", "esmeraldas", "guayas", "losrios", "manabi", 
+                 "santaelena")
+sierra.names <- c("carchi", "imbabura", "pichincha", "cotopaxi", "tungurahua", 
+                  "chimborazo", "bolivar", "canar", "azuay", "loja", 
+                  "santodomingo")
+oriente.names <- c("sucumbios", "napo", "orellana", "pastaza", "moronasantiago",
+                   "zamorachinchipe")
+insular.names <- "galapagos"
 
 ## METHOD: Create a dataframe which specifies whether a province belongs to
 ## the coast or highlands (1 = coast, 0 = highlands).
@@ -194,8 +202,14 @@ df.region <- data.frame()
 df.region <- data.frame(unique(df.codes$provincename.nsp))
 names(df.region) <- "provincename.nsp"
 df.region <- df.region %>%
-        mutate(region = ifelse(provincename.nsp %in% coast.names, 1, 0))
-remove(coast.names)
+        mutate(region = ifelse(provincename.nsp %in% costa.names, 1, 
+                               provincename.nsp)) %>%
+        mutate(region = ifelse(region %in% sierra.names, 2, region)) %>%
+        mutate(region = ifelse(region %in% oriente.names, 3, region)) %>%
+        mutate(region = ifelse(region %in% insular.names, 4, region)) %>%
+        mutate(region = gsub("zonasnodelimitadas", 999, region))
+        
+remove(costa.names, insular.names, oriente.names, sierra.names)
 
 
 ## ----------------------------------------------------------------##
