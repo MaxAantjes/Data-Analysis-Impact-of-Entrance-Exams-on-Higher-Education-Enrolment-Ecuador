@@ -459,6 +459,20 @@ df.population <- dat4 %>%
 
 remove(dat0, dat1, dat2, dat3, dat4)
 
+## ----------------------------------------------------------------##
+## GOAL: merge the dataframes.
+
+names <- df0 %>%
+        select(cantonname, cantonname.nsp, provincename, provincename.nsp,
+               cantoncode)
+
+df.merged <- df.population %>%
+        left_join(df.outflow, by = "cantoncode") %>%
+        left_join(df.inflow, by = "cantoncode") %>%
+        left_join(names, by = "cantoncode")
+
+df.merged[is.na(df.merged)] <- 0
+
 ## Test set: mocache = 3,076 + 2,640; cayambe = 7,801 + 7,413; 
 ## mangadelcura = 1,574	1,486.
 unique(df.population$young.adult.population.2010[
@@ -467,3 +481,4 @@ unique(df.population$young.adult.population.2010[
         df.population$cantonname.nsp=="cayambe"])
 unique(df.population$young.adult.population.2010[
         df.population$cantonname.nsp=="mangadelcura"])
+
