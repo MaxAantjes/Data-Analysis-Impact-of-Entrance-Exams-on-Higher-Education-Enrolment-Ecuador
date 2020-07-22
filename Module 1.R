@@ -106,13 +106,22 @@ remove(dat0)
 ## ----------------------------------------------------------------##
 ## GOAL: Specify variable class and levels for R. 
 
+## METHOD: change current.address postcode into a character variable (to 
+## recognize 0 values which start some 6 digit postcodes).
+
+dat2 <- dat1 %>%
+        mutate(current.address.postcode = 
+                       as.character(current.address.postcode)) %>%
+        mutate(current.address.postcode = 
+                       ifelse(nchar(current.address.postcode) < 6, 
+                              paste0("0", current.address.postcode), 
+                              current.address.postcode)) %>%
+
 ## METHOD: Specify factor variables according to surveys and codebook. Levels
 ## with values c(1,2) are converted to c(0,1) to make regression computations
 ## posible and clear. Unless otherwise stated, 0 stands for: urban; no; female
 ## and 1 stands for: rural; yes; male. 
 
-dat2 <- dat1 %>%
-        
         mutate(current.address.area = ifelse(
                 current.address.area == 1, 0, 1)) %>%
         
