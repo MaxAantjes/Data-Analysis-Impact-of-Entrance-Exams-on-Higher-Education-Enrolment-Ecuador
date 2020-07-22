@@ -167,7 +167,6 @@ remove(dat1)
 ## GOAL: Add a variable calculating the minimum total years enrolled in 
 ## education. 
 
-
 ## METHOD: Calculate every years in education for undergraduate graduates.
 
 temp <- dat2 %>%
@@ -197,7 +196,7 @@ dat3$years.in.education[dat3$education.level == 10] <- 13+5
 dat3$years.in.education <- dat3$years.in.education + 
         dat3$years.completed.highest.education.level
 
-remove(dat2)
+remove(dat2, temp)
 
 
 ## ----------------------------------------------------------------##
@@ -209,6 +208,13 @@ dat4 <- dat3 %>%
                        ifelse(education.level > 7, 1, 0))
 
 remove(dat3)
+
+
+## ----------------------------------------------------------------##
+## GOAL: Add a variable indicating the survey year.
+dat4 <- dat4 %>%
+        mutate(year = as.integer(format(as.Date(survey.date, 
+                                                format="%d/%m/%Y"),"%Y")))
 
 
 ## ----------------------------------------------------------------##
