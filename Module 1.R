@@ -31,7 +31,6 @@ dat0 <- lapply(dat0, namestolower)
 ## the data sets have missing columns). 
 
 checkcols <- function(x, y) {
-        
         incomplete.columns <- c()
         
         for(j in 1:length(x)) {
@@ -187,7 +186,7 @@ dat3$years.in.education[dat3$education.level == 2] <- 0
 dat3$years.in.education[dat3$education.level == 3] <- 0
 dat3$years.in.education[dat3$education.level == 4] <- 1
 dat3$years.in.education[dat3$education.level == 5] <- 0
-dat3$years.in.education[dat3$education.level == 6] <- 6
+dat3$years.in.education[dat3$education.level == 6] <- 7
 dat3$years.in.education[dat3$education.level == 7] <- 10
 dat3$years.in.education[dat3$education.level == 8] <- 13
 dat3$years.in.education[dat3$education.level == 9] <- 13
@@ -213,8 +212,8 @@ remove(dat3)
 ## ----------------------------------------------------------------##
 ## GOAL: Add a variable indicating the survey year.
 dat4 <- dat4 %>%
-        mutate(year = as.integer(format(as.Date(survey.date, 
-                                                format="%d/%m/%Y"),"%Y")))
+        mutate(survey.year = format(as.Date(survey.date, 
+                                                format="%d/%m/%Y"),"%Y"))
 
 
 ## ----------------------------------------------------------------##
@@ -269,8 +268,8 @@ remove(dat4, temp1, temp2)
 ## ----------------------------------------------------------------##
 ## GOAL: order columns in an intuitive way.
 
-dat6 <- dat5[, c(13, 3, 15, 4, 16, 17, 18, 19, 2, 1, 5, 6, 7, 8, 9, 10, 11, 14, 
-                 12)]
+dat6 <- dat5[, c(13, 20, 3, 15, 4, 16, 17, 18, 19, 2, 1, 5, 6, 7, 8, 9, 10, 11, 
+                 14, 12)]
 
 remove(dat5)
 
